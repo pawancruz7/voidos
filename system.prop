@@ -1,0 +1,31 @@
+# ============================================================================
+#  VoidOS System Properties Matrix Configuration
+#  Target: Android Core Runtime Optimization & Telemetry Kill-Switch
+# ============================================================================
+
+# 1. Custom Branding and Boot Identification
+ro.build.display.id=VoidOS-v0.1-Alpha-Cyberpunk
+ro.voidos.version=0.1_Alpha
+ro.voidos.codename=void_walker
+
+# 2. Complete Telemetry and Error-Reporting Interception
+ro.config.nocheck=1
+ro.kernel.android.checkjni=0
+profiler.force_disable_err_rpt=1
+profiler.force_disable_ulog=1
+
+# 3. Secure Default Networking Overrides
+# Force system to bypass corporate tracking connectivity nodes
+ro.connectivity.chiplist=none
+net.dns1=9.9.9.9
+net.dns2=1.1.1.1
+
+# 4. Hardware-Level Security Property Stubs
+# Used by our C++ Camera/Mic Shield patch to enforce dummy streaming state
+sys.voidos.camera.spoof=0
+sys.voidos.audio.isolated=1
+
+# 5. UI Rendering Optimization (Forcing Hardware Composition)
+debug.sf.hw=1
+debug.egl.hw=1
+video.accelerate.hw=1
