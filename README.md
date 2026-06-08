@@ -1,12 +1,11 @@
-# NakedOS
+# voidos 
 
 **Privacy-First • De-Googled • Android-based Mobile OS**
 
 > "Nothing to hide, nothing to track"
+voidOS is a lightweight, privacy-focused mobile operating system built on Android. It removes all Google tracking, telemetry, and bloatware while delivering a clean and fast user experience.
 
-NakedOS is a lightweight, privacy-focused mobile operating system built on Android. It removes all Google tracking, telemetry, and bloatware while delivering a clean and fast user experience.
-
-### Why NakedOS?
+### Why voidos?
 - Complete freedom from Google services and surveillance
 - Your data belongs to you — no company can track you
 - Simple, minimal, and secure by design
