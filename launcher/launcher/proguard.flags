@@ -1,0 +1,21 @@
+# ============================================================================
+#  VoidOS UI Subsystem - Obfuscation & Hardening Rules
+#  Protects VoidLauncher from reverse-engineering and byte-code analysis
+# ============================================================================
+
+# Keep entry points for the Android system to bind the activity
+-keep public class com.android.launcher.voidos.VoidLauncher {
+    public protected *;
+}
+
+# Strip all debugging logs, source file names, and line numbers for peak security
+-nowarn **
+-repackageclasses 'com.android.launcher.voidos.internal'
+-allowaccessmodification
+
+# Remove explicit developer logs during compilation to prevent data leaks
+-assumenosideeffects class android.util.Log {
+    public static boolean isLoggable(java.lang.String, int);
+    public static int v(...);
+    public static int d(...);
+}
