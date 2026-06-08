@@ -1,0 +1,23 @@
+# ============================================================================
+#  VoidOS Security Policy Subsystem
+#  Module: SELinux Type Enforcement for Void Sanitizer Daemon
+#  Purpose: Enforcing strict kernel privileges and isolating execution domains
+# ============================================================================
+
+# Define the security context domains for our God-Mode Daemon
+type void_sanitizer, domain, coredomain;
+type void_sanitizer_exec, exec_type, file_type, system_file_type;
+
+# Bootstrap token: Allows Android's init process to transition into void_sanitizer domain
+init_daemon_domain(void_sanitizer)
+
+# Crucial Privilege Grant: Authorization to write directly into kernel memory managers
+allow void_sanitizer proc_drop_caches:file { open write getattr };
+
+# Allow interaction with the native Android logging daemon (liblog / logcat)
+allow void_sanitizer logdw_socket:sock_file write;
+allow void_sanitizer logd:unix_stream_socket connectto;
+
+# Strict Isolation Isolation Clause: Deny all external non-system third-party applications
+# from sending signals or tracing the memory mapping of the void_sanitizer domain
+neverallow { domain -coredomain -init } void_sanitizer:process ptrace;
