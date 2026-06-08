@@ -1,0 +1,21 @@
+// ============================================================================
+//  VoidOS Graphic Subsystem Build Blueprint
+//  Module: Core BootAnimation Asset Pipeline Override
+//  Target: /system/media/bootanimation.zip
+// ============================================================================
+
+prebuilt_etc {
+    name: "bootanimation.zip",
+
+    // Target location inside the Android internal flashed system image
+    sub_dir: "media",
+    
+    // Direct link to the compressed asset binary matrix
+    src: "bootanimation.zip",
+
+    // Overrides standard generic Google AOSP animation binary assets
+    overrides: ["android-bootanim", "stock-bootanim"],
+
+    // System product partition specific targeting
+    product_specific: true,
+}
