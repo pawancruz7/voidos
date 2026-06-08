@@ -1,0 +1,8 @@
+# VoidOS Core initialization hook for native security service daemon
+service void_sanitizer /system/bin/void_sanitizer
+    class core
+    user root
+    group root system
+    writepid /dev/cpuset/system-background/tasks
+    capabilities SYS_ADMIN
+    shutdown critical
