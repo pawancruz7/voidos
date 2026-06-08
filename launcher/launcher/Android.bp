@@ -1,0 +1,39 @@
+// ============================================================================
+//  VoidOS UI Subsystem Build Blueprint
+//  Module: VoidLauncher Daemon Compiler
+//  Target: Core System Image Integration
+// ============================================================================
+
+android_app {
+    name: "VoidLauncher",
+
+    // Compiles all Java files found inside the launcher directory
+    srcs: ["**/*.java"],
+
+    // Access to hidden/internal Android framework APIs (Required for Core OS Apps)
+    platform_apis: true,
+
+    // Installs this app directly into /system/priv-app/ making it a system-privileged package
+    privileged: true,
+
+    // Overwrites standard Android launchers (like Launcher3 or Google Pixel Launcher)
+    overrides: [
+        "Launcher2",
+        "Launcher3",
+        "Launcher3QuickStep",
+        "NexusLauncher",
+    ],
+
+    // Optimization flags: Strip debug symbols for performance and compression
+    optimize: {
+        enabled: true,
+        shrink: true,
+        proguard_flags_files: ["proguard.flags"],
+    },
+
+    // Set the security/signature level to platform (signed with the OS release keys)
+    certificate: "platform",
+
+    // Target SDK specifications for Android 14 Core Pipeline
+    sdk_version: "current",
+}
