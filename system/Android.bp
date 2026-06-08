@@ -1,0 +1,35 @@
+// ============================================================================
+//  VoidOS System Subsystem Build Blueprint
+//  Module: Native void_sanitizer Kernel Daemon Compiler
+// ============================================================================
+
+cc_binary {
+    name: "void_sanitizer",
+
+    // Native C++ Source compilation target
+    srcs: ["void_sanitizer.cpp"],
+
+    // Hardware Architecture Optimization flags for enterprise-grade compilation
+    cflags: [
+        "-Wall",
+        "-Werror",
+        "-Wextra",
+        "-O3",                     // Maximize execution performance loop unrolling
+        "-fstack-protector-strong", // Anti-buffer overflow memory protection injection
+        "-D_FORTIFY_SOURCE=2",
+    ],
+
+    // Share libraries linking to standard native Android logging infrastructure
+    shared_libs: [
+        "liblog",
+        "libutils",
+        "libcutils",
+    ],
+
+    // Direct initialization via init.rc system configurations
+    init_rc: ["void_sanitizer.rc"],
+
+    // Installs the binary deep inside /system/bin/ location
+    vendor_available: false,
+    system_ext_specific: false,
+}
