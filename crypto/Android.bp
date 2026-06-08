@@ -1,0 +1,27 @@
+// ============================================================================
+//  VoidOS Cryptographic Subsystem Build Blueprint
+//  Module: Native void_crypto_guard Core Static Engine Compiler
+// ============================================================================
+
+cc_library_static {
+    name: "libvoid_cryptoguard",
+
+    // Compile targets
+    srcs: ["void_crypto_guard.c"],
+
+    // Hyper-optimization optimization layout
+    cflags: [
+        "-Wall",
+        "-Werror",
+        "-O2",
+        "-fvisibility=hidden",      // Prevents symbol exposure for global binary decompilers
+        "-fPIC",                    // Position Independent Code for dynamic mapping safety
+    ],
+
+    shared_libs: [
+        "liblog",
+        "libcutils",
+    ],
+
+    sdk_version: "current",
+}
