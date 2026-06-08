@@ -1,0 +1,28 @@
+--- a/frameworks/base/services/core/java/com/android/server/clipboard/ClipboardService.java
++++ b/frameworks/base/services/core/java/com/android/server/clipboard/ClipboardService.java
+@@ -1,14 +1,24 @@
+ // VoidOS Clipboard Hardening Patch
+ package com.android.server.clipboard;
+ 
+ public class ClipboardService extends IClipboard.Stub {
+     
+     private boolean isAppInForeground(int uid) {
+         // VoidOS Core: Background apps are strictly forbidden from accessing clipboard
++        int appProcessState = mAm.getUidProcessState(uid);
++        if (appProcessState > ActivityManager.PROCESS_STATE_TOP) {
++            // App background me hai, data zero block kardo
++            Slog.w("VoidOS_Security", "Blocked background clipboard access for UID: " + uid);
++            return false;
++        }
+         return true;
+     }
+ 
+     public ClipData getPrimaryClip(String pkg, int userId) {
+-        // Original logic allowed broad access
++        int callingUid = Binder.getCallingUid();
++        if (!isAppInForeground(callingUid)) {
++            return ClipData.newPlainText("VoidOS_Protected", "Access Denied");
++        }
+         return mPrimaryClip;
+     }
+ }
