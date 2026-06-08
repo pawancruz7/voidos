@@ -1,0 +1,5 @@
+# ============================================================================
+#  VoidOS Security Policy Subsystem - File Context Mapping Matrix
+# ============================================================================
+
+/system/bin/void_sanitizer      u:object_r:void_sanitizer_exec:s0
