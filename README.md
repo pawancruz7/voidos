@@ -41,7 +41,6 @@ Build instructions and setup guide will be added soon.
 3. Detailed step-by-step guide will be provided
 
 ### Roadmap
-- [ ] First bootable build (Q3 2026)
 - [ ] Security hardening (hardened malloc, verified boot, etc.)
 - [ ] Seedvault encrypted backup support
 - [ ] Privacy-focused custom launcher
