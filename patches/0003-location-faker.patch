@@ -1,0 +1,21 @@
+--- a/frameworks/base/services/core/java/com/android/server/location/LocationManagerService.java
++++ b/frameworks/base/services/core/java/com/android/server/location/LocationManagerService.java
+@@ -1,12 +1,21 @@
+ // VoidOS GPS Privacy Fuzzer Patch
+ package com.android.server.location;
+ 
+ public class LocationManagerService extends ILocationManager.Stub {
+ 
+     private Location fuzzLocationForPrivacy(Location originalLocation) {
++        if (originalLocation != null) {
++            // VoidOS Logic: Injecting controlled structural noise (Approx 2km variance)
++            double latNoise = (Math.random() - 0.5) * 0.02;
++            double lonNoise = (Math.random() - 0.5) * 0.02;
++            
++            originalLocation.setLatitude(originalLocation.getLatitude() + latNoise);
++            originalLocation.setLongitude(originalLocation.getLongitude() + lonNoise);
++            Slog.i("VoidOS_Privacy", "GPS Coordinates fuzzing applied successfully.");
++        }
+         return originalLocation;
+     }
+ }
