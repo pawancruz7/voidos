@@ -1,0 +1,12 @@
+# ============================================================================
+#  VoidOS Graphic Subsystem - Boot Animation Matrix Engineering
+#  Resolution: 1080 x 2400 (Standard Smartphone High-Density Display Matrix)
+#  FPS: 60 Frames Per Second (Ultra-Smooth Hardware Sync)
+# ============================================================================
+1080 2400 60
+
+# Part 1: Initial System Handshake (Runs once, blocks framework till ready)
+p 1 0 part0
+
+# Part 2: Continuous Security Stream Loop (Loops infinitely until zygote boots)
+p 0 0 part1
