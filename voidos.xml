@@ -1,17 +1,132 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!--
+  voidOS Repository Manifest
+  Based on AOSP Android 14 (android-14.0.0_r50)
+
+  This manifest defines which AOSP components are included in voidOS.
+  Google Mobile Services (GMS), Play Store, and telemetry packages
+  are intentionally excluded.
+
+  Usage:
+    repo init -u https://github.com/pawancruz7/voidos -b main -m voidos.xml
+    repo sync -c -j$(nproc) - -force-sync - -no-clone-bundle
+-->
+
 <manifest>
-  <!-- Remote sources for core AOSP -->
-  <remote name="aosp" fetch="https://android.googlesource.com" review="android-review.googlesource.com" />
-  <remote name="voidos" fetch="https://github.com/pawancruz7" />
 
-  <!-- Core Android revision to build upon (Android 14/15 Base) -->
-  <default revision="refs/tags/android-14.0.0_r50" remote="aosp" sync-j="4" />
+  <!-- ── Remote sources ──────────────────────────────────────── -->
+  <remote  name="aosp"
+           fetch="https://android.googlesource.com"
+           review="https://android-review.googlesource.com" />
 
-  <!-- Core Operating System Components -->
-  <project path="build/make" name="platform/build" groups="pdk,tradefed" />
-  <project path="bionic" name="platform/bionic" groups="pdk" />
-  <project path="system/core" name="platform/system/core" groups="pdk" />
-  
-  <!-- VoidOS Custom Layer Location -->
-  <project path="vendor/voidos" name="voidos" remote="voidos" revision="main" />
-</manifest>
+  <remote  name="github"
+           fetch="https://github.com" />
+
+  <!-- ── Default sync config ─────────────────────────────────── -->
+  <default revision="android-14.0.0_r50"
+           remote="aosp"
+           sync-j="4"
+           sync-c="true" />
+
+  <!-- ════════════════════════════════════════════════════════════
+       AOSP CORE — Required for a bootable build
+       ════════════════════════════════════════════════════════════ -->
+
+  <!-- Build system -->
+  <project path="build/make"         name="platform/build"              />
+  <project path="build/blueprint"    name="platform/build/blueprint"    />
+  <project path="build/soong"        name="platform/build/soong"        />
+  <project path="build/bazel"        name="platform/build/bazel"        />
+  <project path="tools/make"         name="platform/tools/make"         />
+
+  <!-- Kernel headers & bionic libc -->
+  <project path="bionic"             name="platform/bionic"             />
+  <project path="libnativehelper"    name="platform/libnativehelper"    />
+  <project path="system/core"        name="platform/system/core"        />
+  <project path="system/extras"      name="platform/system/extras"      />
+  <project path="system/logging"     name="platform/system/logging"     />
+  <project path="system/libbase"     name="platform/system/libbase"     />
+  <project path="system/libziparchive" name="platform/system/libziparchive" />
+
+  <!-- Hardware abstraction layer (HAL) -->
+  <project path="hardware/interfaces"     name="platform/hardware/interfaces"     />
+  <project path="hardware/libhardware"    name="platform/hardware/libhardware"    />
+  <project path="hardware/libhardware_legacy" name="platform/hardware/libhardware_legacy" />
+
+  <!-- Android framework -->
+  <project path="frameworks/base"         name="platform/frameworks/base"         />
+  <project path="frameworks/native"       name="platform/frameworks/native"       />
+  <project path="frameworks/av"           name="platform/frameworks/av"           />
+  <project path="frameworks/minikin"      name="platform/frameworks/minikin"      />
+  <project path="frameworks/libs/net"     name="platform/frameworks/libs/net"     />
+
+  <!-- Dalvik / ART runtime -->
+  <project path="art"                name="platform/art"                />
+  <project path="libcore"            name="platform/libcore"            />
+
+  <!-- Package manager & services -->
+  <project path="packages/apps/Settings"       name="platform/packages/apps/Settings"       />
+  <project path="packages/apps/Launcher3"      name="platform/packages/apps/Launcher3"      />
+  <project path="packages/apps/Camera2"        name="platform/packages/apps/Camera2"        />
+  <project path="packages/apps/Messaging"      name="platform/packages/apps/Messaging"      />
+  <project path="packages/apps/DeskClock"      name="platform/packages/apps/DeskClock"      />
+  <project path="packages/apps/Calendar"       name="platform/packages/apps/Calendar"       />
+  <project path="packages/providers/ContactsProvider" name="platform/packages/providers/ContactsProvider" />
+  <project path="packages/providers/DownloadProvider" name="platform/packages/providers/DownloadProvider" />
+
+  <!-- Connectivity & networking (no telemetry) -->
+  <project path="packages/modules/Connectivity"  name="platform/packages/modules/Connectivity"  />
+  <project path="packages/modules/NetworkStack"   name="platform/packages/modules/NetworkStack"   />
+  <project path="packages/modules/DnsResolver"    name="platform/packages/modules/DnsResolver"    />
+
+  <!-- Security -->
+  <project path="packages/modules/Permission"    name="platform/packages/modules/Permission"    />
+
+  <!-- External libraries -->
+  <project path="external/boringssl"  name="platform/external/boringssl"  />
+  <project path="external/conscrypt"  name="platform/external/conscrypt"  />
+  <project path="external/sqlite"     name="platform/external/sqlite"     />
+  <project path="external/icu"        name="platform/external/icu"        />
+  <project path="external/zlib"       name="platform/external/zlib"       />
+  <project path="external/libcxx"     name="platform/external/libcxx"     />
+  <project path="external/selinux"    name="platform/external/selinux"    />
+  <project path="external/e2fsprogs"  name="platform/external/e2fsprogs"  />
+
+  <!-- ════════════════════════════════════════════════════════════
+       PRIVACY REPLACEMENTS — Open-source alternatives to GMS
+       ════════════════════════════════════════════════════════════ -->
+
+  <!-- MicroG — open-source GMS replacement (optional, user-controlled) -->
+  <!-- Uncomment below when MicroG integration is ready
+  <project path="packages/apps/GmsCore"
+           name="microg/android_packages_apps_GmsCore"
+           remote="github"
+           revision="master" />
+  <project path="packages/apps/GsfProxy"
+           name="microg/android_packages_apps_GsfProxy"
+           remote="github"
+           revision="master" />
+  -->
+
+  <!-- F-Droid Privileged Extension — allows background app updates from F-Droid -->
+  <!-- Uncomment when ready
+  <project path="packages/apps/FDroidPrivileged"
+           name="fdroid/privileged-extension"
+           remote="github"
+           revision="master" />
+  -->
+
+  <!-- ════════════════════════════════════════════════════════════
+       EXPLICITLY EXCLUDED — Google proprietary packages
+       (Listed here for documentation; repo sync will not fetch these)
+
+       - GmsCore / Play Services
+       - Play Store (Phonesky)
+       - Google Search (Velvet)
+       - Chrome (com.android.chrome)
+       - Firebase / Crashlytics
+       - SafetyNet / Play Integrity
+       - Widevine DRM (replaced with open alternatives)
+       ════════════════════════════════════════════════════════════ -->
+
+</manifest
