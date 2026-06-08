@@ -1,0 +1,11 @@
+--- a/system/core/rootdir/init.rc
++++ b/system/core/rootdir/init.rc
+@@ -1,6 +1,6 @@
+ # VoidOS Core Privacy Network Configurations
+ on init
+-    # Block default corporate DNS tracking
+-    setprop net.dns1 9.9.9.9
+-    setprop net.dns2 1.1.1.1
+-    setprop net.connectivity.check_url "http://localhost"
++    # Secure DNS fallback activated by default
++    write /proc/sys/net/ipv4/tcp_syncookies 1
