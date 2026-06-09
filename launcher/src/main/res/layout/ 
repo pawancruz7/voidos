@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#0F0F14"> <!-- Dark Minimalist Theme -->
+
+    <!-- Top Status Bar Spacer -->
+    <View
+        android:id="@+id/status_bar_spacer"
+        android:layout_width="match_parent"
+        android:layout_height="24dp"
+        android:layout_alignParentTop="true"/>
+
+    <!-- Clock & Date (VoidOS Style) -->
+    <LinearLayout
+        android:id="@+id/clock_container"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/status_bar_spacer"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="40dp"
+        android:orientation="vertical"
+        android:gravity="center">
+
+        <TextView
+            android:id="@+id/home_clock"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="23:14"
+            android:textColor="#FFFFFF"
+            android:textSize="54sp"
+            android:fontFamily="sans-serif-thin" />
+
+        <TextView
+            android:id="@+id/home_date"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Monday, June 8"
+            android:textColor="#8A8A8F"
+            android:textSize="16sp"
+            android:layout_marginTop="4dp" />
+    </LinearLayout>
+
+    <!-- App Grid (Apps List Container) -->
+    <GridView
+        android:id="@+id/apps_grid"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_below="@id/clock_container"
+        android:layout_above="@id/bottom_dock"
+        android:layout_margin="24dp"
+        android:numColumns="4"
+        android:verticalSpacing="20dp"
+        android:horizontalSpacing="20dp"
+        android:stretchMode="columnWidth"
+        android:gravity="center" />
+
+    <!-- Bottom Dock (For Favorite Apps like Phone, Browser) -->
+    <LinearLayout
+        android:id="@+id/bottom_dock"
+        android:layout_width="match_parent"
+        android:layout_height="84dp"
+        android:layout_alignParentBottom="true"
+        android:layout_marginHorizontal="16dp"
+        android:layout_marginBottom="16dp"
+        android:background="@drawable/dock_background"
+        android:orientation="horizontal"
+        android:gravity="center"
+        android:weightSum="4" />
+
+</RelativeLayout>
