@@ -1,20 +1,26 @@
 --- a/frameworks/base/services/core/java/com/android/server/location/LocationManagerService.java
 +++ b/frameworks/base/services/core/java/com/android/server/location/LocationManagerService.java
-@@ -1,12 +1,21 @@
+@@ -1,12 +1,25 @@
  // VoidOS GPS Privacy Fuzzer Patch
  package com.android.server.location;
  
++import java.security.SecureRandom;
++
  public class LocationManagerService extends ILocationManager.Stub {
  
++    // Single SecureRandom instance — thread-safe and cryptographically strong
++    private static final SecureRandom sSecureRandom = new SecureRandom();
++
      private Location fuzzLocationForPrivacy(Location originalLocation) {
 +        if (originalLocation != null) {
-+            // VoidOS Logic: Injecting controlled structural noise (Approx 2km variance)
-+            double latNoise = (Math.random() - 0.5) * 0.02;
-+            double lonNoise = (Math.random() - 0.5) * 0.02;
-+            
++            // VoidOS Logic: Injecting controlled structural noise (~2km variance)
++            // SecureRandom used instead of Math.random() — unpredictable, not reversible
++            double latNoise = (sSecureRandom.nextDouble() - 0.5) * 0.02;
++            double lonNoise = (sSecureRandom.nextDouble() - 0.5) * 0.02;
++
 +            originalLocation.setLatitude(originalLocation.getLatitude() + latNoise);
 +            originalLocation.setLongitude(originalLocation.getLongitude() + lonNoise);
-+            Slog.i("VoidOS_Privacy", "GPS Coordinates fuzzing applied successfully.");
++            Slog.i("VoidOS_Privacy", "GPS coordinates fuzzed with SecureRandom (~2km variance).");
 +        }
          return originalLocation;
      }
