@@ -1,0 +1,33 @@
+android_app {
+    name: "VoidOSLauncher",
+
+    // Yeh batata hai ki saare Java source codes kahan hain
+    srcs: ["src/main/java/**/*.java"],
+
+    // Resource files ka path (layouts, strings, drawables)
+    resource_dirs: ["src/main/res"],
+
+    // Yeh launcher ko ek core System App banayega
+    privileged: true,
+    system_ext_specific: true,
+
+    // Platform ke private APIs use karne ki permission dena
+    platform_apis: true,
+
+    // Optimization settings
+    optimize: {
+        enabled: false,
+    },
+
+    // AOSP ke default components jo humein chahiye
+    static_libs: [
+        "androidx.appcompat_appcompat",
+        "androidx-constraintlayout_constraintlayout",
+    ],
+
+    // Launcher ka signature system level ka hona chahiye
+    certificate: "platform",
+
+    // Kaun se products mein yeh include hoga
+    manifest: "src/main/AndroidManifest.xml",
+}
