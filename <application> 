@@ -1,0 +1,22 @@
+<application ...>
+
+    <activity 
+        android:name=".LockScreenActivity"
+        android:launchMode="singleInstance"
+        android:theme="@android:style/Theme.NoTitleBar.Fullscreen"
+        android:exported="true">
+        <intent-filter android:priority="1000">
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.HOME" />
+            <category android:name="android.intent.category.DEFAULT" />
+        </intent-filter>
+    </activity>
+
+    <activity 
+        android:name=".HomeActivity"
+        android:launchMode="singleInstance"
+        android:theme="@android:style/Theme.NoTitleBar.Fullscreen"
+        android:exported="false">
+    </activity>
+
+</application>
