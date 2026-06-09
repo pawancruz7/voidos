@@ -1,0 +1,9 @@
+if (lockedAppsList.contains(packageName)) {
+    // Direct app open mat karo, pehle LockScreenActivity ya PinActivity par bhejo
+    Intent pinIntent = new Intent(context, PinValidationActivity.class);
+    pinIntent.putExtra("target_package", packageName);
+    context.startActivity(pinIntent);
+} else {
+    // Normal launch
+    context.startActivity(launchIntent);
+}
