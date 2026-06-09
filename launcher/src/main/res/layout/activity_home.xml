@@ -1,0 +1,208 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#0F0F14">
+
+    <!-- TOP STATUS BAR (Click karne par Quick Settings khulega) -->
+    <LinearLayout
+        android:id="@+id/status_bar"
+        android:layout_width="match_parent"
+        android:layout_height="28dp"
+        android:layout_alignParentTop="true"
+        android:background="#1A000000"
+        android:orientation="horizontal"
+        android:paddingHorizontal="16dp"
+        android:gravity="center_vertical">
+        
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="VoidOS"
+            android:textColor="#FFFFFF"
+            android:textSize="12sp"
+            android:fontFamily="sans-serif-medium" />
+            
+        <View
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1" />
+
+        <TextView
+            android:id="@+id/status_bar_time"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="23:14"
+            android:textColor="#FFFFFF"
+            android:textSize="12sp"
+            android:layout_marginRight="8dp"/>
+            
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="5G 🔋 98%"
+            android:textColor="#FFFFFF"
+            android:textSize="12sp" />
+    </LinearLayout>
+
+    <!-- CLOCK & DATE -->
+    <LinearLayout
+        android:id="@+id/clock_container"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/status_bar"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="30dp"
+        android:orientation="vertical"
+        android:gravity="center">
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="23:14"
+            android:textColor="#FFFFFF"
+            android:textSize="48sp"
+            android:fontFamily="sans-serif-thin" />
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Monday, June 8"
+            android:textColor="#8A8A8F"
+            android:textSize="14sp" />
+    </LinearLayout>
+
+    <!-- MAIN APP GRID -->
+    <GridView
+        android:id="@+id/apps_grid"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_below="@id/clock_container"
+        android:layout_above="@id/bottom_navigation_bar"
+        android:layout_margin="16dp"
+        android:numColumns="4"
+        android:verticalSpacing="16dp"
+        android:horizontalSpacing="16dp" />
+
+    <!-- NAVIGATION BAR (Back, Home, Recents) -->
+    <LinearLayout
+        android:id="@+id/bottom_navigation_bar"
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:layout_alignParentBottom="true"
+        android:background="#1F1F24"
+        android:orientation="horizontal"
+        android:gravity="center"
+        android:weightSum="3">
+
+        <!-- Back Button -->
+        <ImageView
+            android:id="@+id/btn_back"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:src="@android:drawable/ic_media_previous"
+            android:padding="14dp"
+            android:background="?android:attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Back" />
+
+        <!-- Home Button -->
+        <ImageView
+            android:id="@+id/btn_home"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:src="@android:drawable/checkbox_off_background"
+            android:padding="16dp"
+            android:background="?android:attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Home" />
+
+        <!-- Recents Button -->
+        <ImageView
+            android:id="@+id/btn_recents"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:src="@android:drawable/ic_menu_sort_by_size"
+            android:padding="14dp"
+            android:background="?android:attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Recents" />
+    </LinearLayout>
+
+    <!-- NOTIFICATION / QUICK SETTINGS PANEL (Shade) -->
+    <!-- Shuruat mein yeh hidden (GONE) rahega, status bar dabane par niche aayega -->
+    <LinearLayout
+        android:id="@+id/quick_settings_panel"
+        android:layout_width="match_parent"
+        android:layout_height="300dp"
+        android:layout_below="@id/status_bar"
+        android:background="#E6121217"
+        android:orientation="vertical"
+        android:padding="20dp"
+        android:visibility="gone"
+        android:elevation="10dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Quick Settings"
+            android:textColor="#FFFFFF"
+            android:textSize="18sp"
+            android:layout_marginBottom="20dp"
+            android:fontFamily="sans-serif-medium"/>
+
+        <!-- Toggles Row 1 (WiFi, Flashlight) -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginBottom="16dp">
+
+            <Button
+                android:id="@+id/toggle_wifi"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="WiFi: ON"
+                android:backgroundTint="#2C2C35"
+                android:textColor="#FFFFFF"
+                android:layout_marginRight="8dp"/>
+
+            <Button
+                android:id="@+id/toggle_flashlight"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Flashlight"
+                android:backgroundTint="#2C2C35"
+                android:textColor="#FFFFFF"
+                android:layout_marginLeft="8dp"/>
+        </LinearLayout>
+
+        <!-- Toggles Row 2 (Hotspot, Mobile Data) -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <Button
+                android:id="@+id/toggle_hotspot"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Hotspot"
+                android:backgroundTint="#2C2C35"
+                android:textColor="#FFFFFF"
+                android:layout_marginRight="8dp"/>
+
+            <Button
+                android:id="@+id/toggle_data"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="wrap_content"
+                android:text="Mobile Data"
+                android:backgroundTint="#2C2C35"
+                android:textColor="#FFFFFF"
+                android:layout_marginLeft="8dp"/>
+        </LinearLayout>
+    </LinearLayout>
+
+</RelativeLayout>
