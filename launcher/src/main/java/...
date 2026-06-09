@@ -1,0 +1,39 @@
+package com.voidos.launcher;
+
+import android.app.Activity;
+import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.content.pm.ResolveInfo;
+import android.os.Bundle;
+import android.view.View;
+import android.widget.GridView;
+import java.util.List;
+
+public class HomeActivity extends Activity {
+
+    private PackageManager packageManager;
+    private GridView appsGrid;
+
+    @Override
+    protected void Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_home);
+
+        packageManager = getPackageManager();
+        appsGrid = findViewById(R.id.apps_grid);
+
+        loadInstalledApps();
+    }
+
+    private void loadInstalledApps() {
+        Intent intent = new Intent(Intent.ACTION_MAIN, null);
+        intent.addCategory(Intent.CATEGORY_LAUNCHER);
+
+        // Fetch all launcher apps installed in the system
+        List<ResolveInfo> availableActivities = packageManager.queryIntentActivities(intent, 0);
+        
+        // custom adapter ki help se grid view me icons set honge
+        AppsAdapter adapter = new AppsAdapter(this, availableActivities, packageManager);
+        appsGrid.setAdapter(adapter);
+    }
+}
