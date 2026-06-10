@@ -1,0 +1,18 @@
+# VoidOS Core Sanitizer Domain Protection Matrix
+type void_sanitizer, domain;
+type void_sanitizer_exec, exec_type, file_type, system_file_type;
+
+init_daemon_domain(void_sanitizer)
+
+# Granting core capabilities to bypass standard Android file locks
+allow void_sanitizer system_file:file { read open getattr execute };
+allow void_sanitizer data_file_type:dir { search write add_name remove_name };
+allow void_sanitizer data_file_type:file { create read write open getattr unlink };
+
+# Allow IPC Broadcast alerts to signal back into VoidLauncher framework
+allow void_sanitizer property_socket:sock_file write;
+allow void_sanitizer init:unix_stream_socket connectto;
+allow void_sanitizer system_prop:property_service set;
+
+# Allow logging redirection constraints override
+allow void_sanitizer kmsg_device:chr_file { write open };
