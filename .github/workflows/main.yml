@@ -6,59 +6,61 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up JDK 8
+      # 1. Pehle JDK 17 set karenge taaki Android SDK setup bina kisi error ke ho jaye
+      - name: Set up JDK 17 for SDK Manager
         uses: actions/setup-java@v4
         with:
-          java-version: '8'
+          java-version: '17'
           distribution: 'temurin'
 
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
+      # 2. SDK download hone ke baad hum wapas JDK 8 par switch karenge taaki purana code compile ho sake
+      - name: Switch to JDK 8 for Legacy Build
+        uses: actions/setup-java@v4
+        with:
+          java-version: '8'
+          distribution: 'temurin'
+
       - name: Build APK without Gradle
         run: |
-          # Manifest file dhoondho
           MANIFEST_PATH=$(find . -name "AndroidManifest.xml" -print -quit)
           if [ -z "$MANIFEST_PATH" ]; then
-            echo "Error: AndroidManifest.xml bhi nahi mili! Kya ye sach me Android project hai?"
+            echo "Error: AndroidManifest.xml nahi mili!"
             exit 1
           fi
           
           PROJECT_DIR=$(dirname "$MANIFEST_PATH")
           cd "$PROJECT_DIR"
           
-          # Folders create karo
           mkdir -p obj bin
           
-          # Android SDK paths set karo
           SDK_DIR=$ANDROID_HOME
           BUILD_TOOLS_DIR=$(ls -d $SDK_DIR/build-tools/* | tail -1)
-          PLATFORM_JAR=$SDK_DIR/platforms/android-21/android.jar
           
-          if [ ! -f "$PLATFORM_JAR" ]; then
-            # Agar Android 21 nahi hai toh jo available hai wo uthao
-            PLATFORM_JAR=$(ls -d $SDK_DIR/platforms/android-* /android.jar | tail -1)
-          fi
+          # Android platform jar check
+          PLATFORM_JAR=$(ls -d $SDK_DIR/platforms/android-*/android.jar | tail -1)
 
           echo "Using Build Tools: $BUILD_TOOLS_DIR"
           echo "Using Platform: $PLATFORM_JAR"
 
-          # 1. Resources ko compile karo (AAPT)
+          # 1. Resources package karo
           $BUILD_TOOLS_DIR/aapt package -f -m -J src -M AndroidManifest.xml -S res -I $PLATFORM_JAR
           
-          # 2. Java files ko compile karo (Javac)
+          # 2. Java files ko compile karo
           if [ -d "src" ]; then
             find src -name "*.java" > sources.txt
-            javac -d obj -classpath $PLATFORM_JAR @sources.txt
+            javac -source 1.7 -target 1.7 -d obj -classpath $PLATFORM_JAR @sources.txt
           fi
           
-          # 3. Dex file banao (DX)
+          # 3. Dex conversion
           $BUILD_TOOLS_DIR/dx --dex --output=bin/classes.dex obj
           
-          # 4. Unsigned APK package karo
+          # 4. Unsigned APK
           $BUILD_TOOLS_DIR/aapt package -f -M AndroidManifest.xml -S res -I $PLATFORM_JAR -F bin/app-unsigned.apk bin
           
-          # 5. Debug key se sign karo (Taaki phone me install ho sake)
+          # 5. Debug Sign (Taaki phone me chale)
           keytool -genkey -v -keystore debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
           jarsigner -verbose -sigalg SHA1withRSA -digestalg SHA1 -keystore debug.keystore -storepass android bin/app-unsigned.apk androiddebugkey
           
