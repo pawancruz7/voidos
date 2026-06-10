@@ -12,10 +12,21 @@ jobs:
           distribution: 'temurin'
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
-      - name: Build with Gradle
+      - name: Find and Build Gradle Project
         run: |
-          # AGAR TUMAHA CODE KISI FOLDER KE ANDAR HAI TOH NICHE WALI LINE KA '#' HATAO AUR FOLDER KA NAAM LIKHO
-          # cd TERE_FOLDER_KA_NAAM 
+          # Yeh command khud dhoondhegi ki gradlew file kis folder mein hai
+          GRADLEW_PATH=$(find . -name "gradlew" -print -quit)
+          
+          if [ -z "$GRADLEW_PATH" ]; then
+            echo "Error: Poori repo mein kahi bhi gradlew file nahi mili bhae!"
+            exit 1
+          fi
+          
+          # Us folder ke andar jaao jahan gradlew mili hai
+          PROJECT_DIR=$(dirname "$GRADLEW_PATH")
+          cd "$PROJECT_DIR"
+          
+          # Build shuru karo
           chmod +x gradlew
           ./gradlew assembleDebug
       - name: Upload APK
