@@ -1,39 +1,71 @@
-name: Build Android APK
+name: Build Old Android Project
 on: [push, workflow_dispatch]
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      
-      - name: Set up JDK 17
+
+      - name: Set up JDK 8
         uses: actions/setup-java@v4
         with:
-          java-version: '17'
+          java-version: '8'
           distribution: 'temurin'
-          
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v4
-        
-      - name: Build with System Gradle
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Build APK without Gradle
         run: |
-          # Agar gradlew nahi hai, toh hum system ka gradle use karenge
-          # Yeh command khud dhoondhegi ki build.gradle file kis folder mein hai
-          GRADLE_BUILD_PATH=$(find . -name "build.gradle" -print -quit)
-          
-          if [ -z "$GRADLE_BUILD_PATH" ]; then
-            echo "Error: build.gradle file bhi nahi mili bhae!"
+          # Manifest file dhoondho
+          MANIFEST_PATH=$(find . -name "AndroidManifest.xml" -print -quit)
+          if [ -z "$MANIFEST_PATH" ]; then
+            echo "Error: AndroidManifest.xml bhi nahi mili! Kya ye sach me Android project hai?"
             exit 1
           fi
           
-          PROJECT_DIR=$(dirname "$GRADLE_BUILD_PATH")
+          PROJECT_DIR=$(dirname "$MANIFEST_PATH")
           cd "$PROJECT_DIR"
           
-          # Direct system gradle se build
-          gradle assembleDebug
+          # Folders create karo
+          mkdir -p obj bin
           
-      - name: Upload APK
+          # Android SDK paths set karo
+          SDK_DIR=$ANDROID_HOME
+          BUILD_TOOLS_DIR=$(ls -d $SDK_DIR/build-tools/* | tail -1)
+          PLATFORM_JAR=$SDK_DIR/platforms/android-21/android.jar
+          
+          if [ ! -f "$PLATFORM_JAR" ]; then
+            # Agar Android 21 nahi hai toh jo available hai wo uthao
+            PLATFORM_JAR=$(ls -d $SDK_DIR/platforms/android-* /android.jar | tail -1)
+          fi
+
+          echo "Using Build Tools: $BUILD_TOOLS_DIR"
+          echo "Using Platform: $PLATFORM_JAR"
+
+          # 1. Resources ko compile karo (AAPT)
+          $BUILD_TOOLS_DIR/aapt package -f -m -J src -M AndroidManifest.xml -S res -I $PLATFORM_JAR
+          
+          # 2. Java files ko compile karo (Javac)
+          if [ -d "src" ]; then
+            find src -name "*.java" > sources.txt
+            javac -d obj -classpath $PLATFORM_JAR @sources.txt
+          fi
+          
+          # 3. Dex file banao (DX)
+          $BUILD_TOOLS_DIR/dx --dex --output=bin/classes.dex obj
+          
+          # 4. Unsigned APK package karo
+          $BUILD_TOOLS_DIR/aapt package -f -M AndroidManifest.xml -S res -I $PLATFORM_JAR -F bin/app-unsigned.apk bin
+          
+          # 5. Debug key se sign karo (Taaki phone me install ho sake)
+          keytool -genkey -v -keystore debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
+          jarsigner -verbose -sigalg SHA1withRSA -digestalg SHA1 -keystore debug.keystore -storepass android bin/app-unsigned.apk androiddebugkey
+          
+          mv bin/app-unsigned.apk bin/SimpleLauncher.apk
+
+      - name: Upload Finished APK
         uses: actions/upload-artifact@v4
         with:
-          name: app-debug
-          path: "**/build/outputs/apk/debug/*.apk"
+          name: SimpleLauncher-APK
+          path: "**/bin/SimpleLauncher.apk"
