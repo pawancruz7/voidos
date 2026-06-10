@@ -21,20 +21,51 @@ jobs:
           java-version: '8'
           distribution: 'temurin'
 
+      # Python se saare file aur folder ke naam ek dum clean karenge bina structure tode
+      - name: Sanitize Filenames and Folders (Python Proof)
+        run: |
+          python3 -c "
+          import os
+          print('--- Hidden Character Cleaning Started ---')
+          for root, dirs, files in os.walk('.', topdown=False):
+              for name in files:
+                  if '\r' in name:
+                      old = os.path.join(root, name)
+                      new = os.path.join(root, name.replace('\r', ''))
+                      print(f'Cleaning file: {old} -> {new}')
+                      os.rename(old, new)
+              for name in dirs:
+                  if '\r' in name:
+                      old = os.path.join(root, name)
+                      new = os.path.join(root, name.replace('\r', ''))
+                      print(f'Cleaning folder: {old} -> {new}')
+                      os.rename(old, new)
+          print('--- Cleaning Done ---')
+          "
+
+      # Yeh step hamein dikhayega ki saari files sahi jagah par hain ya nahi
+      - name: Debug Directory Structure
+        run: |
+          echo "=== CURRENT REPOSITORY FILES ==="
+          ls -R
+
       - name: Build APK without Gradle
         run: |
-          # 1. Sabse pehle hidden Windows carriage returns (\r) ko saare filenames se khatam karo
-          echo "Cleaning hidden Windows characters from filenames..."
-          find . -depth -name "*"$'\r'"*" -exec sh -c 'for f; do mv "$f" "$(echo "$f" | tr -d "\r")"; done' _ {} +
-
           MANIFEST_PATH=$(find . -name "AndroidManifest.xml" -print -quit)
           if [ -z "$MANIFEST_PATH" ]; then
-            echo "Error: AndroidManifest.xml nahi mili!"
+            echo "Error: AndroidManifest.xml nahi mili bhae!"
             exit 1
           fi
           
           PROJECT_DIR=$(dirname "$MANIFEST_PATH")
           cd "$PROJECT_DIR"
+          
+          echo "Project Directory is: $PROJECT_DIR"
+          if [ ! -d "res" ]; then
+            echo "Error: res folder nahi mila! Let us find where it is:"
+            find . -name "res" -type d
+            exit 1
+          fi
           
           mkdir -p obj bin
           
@@ -45,22 +76,30 @@ jobs:
           echo "Using Build Tools: $BUILD_TOOLS_DIR"
           echo "Using Platform: $PLATFORM_JAR"
 
-          # 2. Resources package karo
+          # 1. Resources package karo
           $BUILD_TOOLS_DIR/aapt package -f -m -J src -M AndroidManifest.xml -S res -I $PLATFORM_JAR
           
-          # 3. Java files ko compile karo
+          # 2. Java files ko compile karo
           if [ -d "src" ]; then
             find src -name "*.java" > sources.txt
-            javac -source 1.7 -target 1.7 -d obj -classpath $PLATFORM_JAR @sources.txt
+            if [ -s sources.txt ]; then
+              javac -source 1.7 -target 1.7 -d obj -classpath $PLATFORM_JAR @sources.txt
+            else
+              mkdir -p obj
+            fi
           fi
           
-          # 4. Dex conversion
-          $BUILD_TOOLS_DIR/dx --dex --output=bin/classes.dex obj
+          # 3. Dex conversion
+          if [ "$(ls -A obj)" ]; then
+            $BUILD_TOOLS_DIR/dx --dex --output=bin/classes.dex obj
+          else
+            touch bin/classes.dex
+          fi
           
-          # 5. Unsigned APK packing
+          # 4. Unsigned APK packing
           $BUILD_TOOLS_DIR/aapt package -f -M AndroidManifest.xml -S res -I $PLATFORM_JAR -F bin/app-unsigned.apk bin
           
-          # 6. Debug Sign (Taaki phone me chale)
+          # 5. Debug Sign (Taaki phone me install ho sake)
           keytool -genkey -v -keystore debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
           jarsigner -verbose -sigalg SHA1withRSA -digestalg SHA1 -keystore debug.keystore -storepass android bin/app-unsigned.apk androiddebugkey
           
