@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#050505"
+    android:keepScreenOn="true">
+
+    <!-- Top Status Indicator Group (Pure Cyberpunk Minimalist Look) -->
+    <LinearLayout
+        android:id="@+id/top_bar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:paddingHorizontal="24dp"
+        android:paddingVertical="28dp"
+        android:gravity="center_vertical">
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="VOID // OS"
+            android:textColor="#FFFFFF"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:letterSpacing="0.3"/>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="SECURE NODE"
+            android:textColor="#00FFB3"
+            android:textSize="10sp"
+            android:textStyle="bold"
+            android:background="#102E26"
+            android:paddingHorizontal="8dp"
+            android:paddingVertical="4dp"/>
+    </LinearLayout>
+
+    <!-- Main Dynamic Application Grid Launcher -->
+    <GridView
+        android:id="@+id/apps_grid"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_below="@id/top_bar"
+        android:numColumns="4"
+        android:verticalSpacing="24dp"
+        android:horizontalSpacing="12dp"
+        android:paddingHorizontal="16dp"
+        android:paddingBottom="32dp"
+        android:stretchMode="columnWidth"
+        android:gravity="center"
+        android:scrollbars="none"
+        android:clipToPadding="false"/>
+
+</RelativeLayout>
