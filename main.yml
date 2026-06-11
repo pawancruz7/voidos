@@ -15,9 +15,14 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Auto-Sanitize and Inject GodMode Files
+      - name: Nuclear Clean Duplicate Folders and Inject Files
         run: |
-          echo "=== Step 1: Finding Main Source Folder ==="
+          echo "=== Step 1: Force Destroying Corrupted Duplicate Folders ==="
+          # Jo galti se duplicate folder ban gaya tha, use machine se jadd se mitao
+          rm -rf voidos-main/launcher/src/main/res/layout/ 2>/dev/null || true
+          rm -rf launcher/src/main/res/layout/launcher/ 2>/dev/null || true
+          
+          echo "=== Step 2: Finding True Main Source Folder ==="
           if [ -d "launcher/src/main" ]; then
             BASE_DIR="launcher/src/main"
           elif [ -d "voidos-main/launcher/src/main" ]; then
@@ -27,25 +32,27 @@ jobs:
             BASE_DIR=$(dirname "$MANIFEST_PATH")
           fi
           
-          echo "Hamaari Main Location Hai: $BASE_DIR"
+          echo "Hamaari Sahi Location Hai: $BASE_DIR"
 
-          echo "=== Step 2: Global Filename & Content Sanitizer ==="
+          echo "=== Step 3: Global Filename & Content Sanitizer ==="
+          # Res folder ki ek-ek file ke naam se \r aur invisible characters mitao
           python3 -c "
           import os
-          for root, dirs, files in os.walk('$BASE_DIR/res'):
-              for file in files:
-                  fp = os.path.join(root, file)
-                  try:
-                      with open(fp, 'rb') as f: content = f.read()
-                      clean = content.replace(b'\r\n', b'\n').replace(b'\r', b'')
-                      with open(fp, 'wb') as f: f.write(clean)
-                  except: pass
-                  clean_name = ''.join([c for c in file if c.isalnum() or c in '._-'])
-                  if clean_name != file:
-                      os.rename(fp, os.path.join(root, clean_name))
+          if os.path.exists('$BASE_DIR/res'):
+              for root, dirs, files in os.walk('$BASE_DIR/res'):
+                  for file in files:
+                      fp = os.path.join(root, file)
+                      try:
+                          with open(fp, 'rb') as f: content = f.read()
+                          clean = content.replace(b'\r\n', b'\n').replace(b'\r', b'')
+                          with open(fp, 'wb') as f: f.write(clean)
+                      except: pass
+                      clean_name = ''.join([c for c in file if c.isalnum() or c in '._-'])
+                      if clean_name != file:
+                          os.rename(fp, os.path.join(root, clean_name))
           "
 
-          echo "=== Step 3: Auto Creating RealTime Distro Layouts ==="
+          echo "=== Step 4: Auto Creating RealTime Distro Layouts ==="
           mkdir -p $BASE_DIR/res/layout
           cat << 'EOF' > $BASE_DIR/res/layout/activity_editor.xml
           <?xml version="1.0" encoding="utf-8"?>
@@ -61,7 +68,7 @@ jobs:
                   android:text="VoidOS Live Distro Script Editor"
                   android:textColor="#00FF00"
                   android:textSize="18sp"
-                  android:layout_marginBottom="4dp"
+                  android:layout_bottom="4dp"
                   android:textStyle="bold" />
               <TextView
                   android:layout_width="wrap_content"
@@ -69,7 +76,7 @@ jobs:
                   android:text="⚠️ Warning: Galat code se UI freeze ho sakti hai, par Crash nahi hoga."
                   android:textColor="#FFA500"
                   android:textSize="12sp"
-                  android:layout_marginBottom="8dp" />
+                  android:layout_bottom="8dp" />
               <EditText
                   android:id="@+id/code_input"
                   android:layout_width="match_parent"
@@ -94,7 +101,7 @@ jobs:
           </LinearLayout>
           EOF
 
-          echo "=== Step 4: Auto Injecting Java Engine Classes ==="
+          echo "=== Step 5: Auto Injecting Java Engine Classes ==="
           JAVA_DIR=$(find . -name "HomeActivity.java" -exec dirname {} \; -print -quit)
           
           cat << 'EOF' > $JAVA_DIR/EditorActivity.java
@@ -221,7 +228,6 @@ jobs:
           chmod +x gradlew 2>/dev/null || true
           ./gradlew assembleDebug --stacktrace || true
           
-          # Agar project root me gradlew na ho toh subfolder me check karo
           if [ ! -f "VoidOSLauncher.apk" ]; then
             find . -name "*.apk" -exec mv {} ./VoidOSLauncher.apk \;
           fi
@@ -233,3 +239,4 @@ jobs:
           path: |
             **/VoidOSLauncher.apk
             **/build/outputs/apk/debug/*.apk
+            
