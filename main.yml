@@ -15,43 +15,39 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Auto-Sanitize and Create GodMode Distro Files
+      - name: Auto-Sanitize and Inject GodMode Files
         run: |
-          echo "=== Step 1: Navigating to Main Folder ==="
+          echo "=== Step 1: Finding Main Source Folder ==="
           if [ -d "launcher/src/main" ]; then
-            cd launcher/src/main
+            BASE_DIR="launcher/src/main"
           elif [ -d "voidos-main/launcher/src/main" ]; then
-            cd voidos-main/launcher/src/main
+            BASE_DIR="voidos-main/launcher/src/main"
           else
             MANIFEST_PATH=$(find . -name "AndroidManifest.xml" -not -path "*/build/*" -not -path "*/.*" -print -quit)
-            cd $(dirname "$MANIFEST_PATH")
+            BASE_DIR=$(dirname "$MANIFEST_PATH")
           fi
           
-          echo "Hamaari Location Hai: $(pwd)"
+          echo "Hamaari Main Location Hai: $BASE_DIR"
 
-          echo "=== Step 2: Global Filename & Content Sanitization ==="
-          # Pure res folder ke andar kisi bhi file ke naam ya content me agar \r ya hidden kachra hai, use dhoondh kar mitao
-          python3 -c '
+          echo "=== Step 2: Global Filename & Content Sanitizer ==="
+          python3 -c "
           import os
-          for root, dirs, files in os.walk("res"):
+          for root, dirs, files in os.walk('$BASE_DIR/res'):
               for file in files:
                   fp = os.path.join(root, file)
-                  # Content saaf karo
                   try:
-                      with open(fp, "rb") as f: content = f.read()
-                      clean = content.replace(b"\r\n", b"\n").replace(b"\r", b"")
-                      with open(fp, "wb") as f: f.write(clean)
+                      with open(fp, 'rb') as f: content = f.read()
+                      clean = content.replace(b'\r\n', b'\n').replace(b'\r', b'')
+                      with open(fp, 'wb') as f: f.write(clean)
                   except: pass
-                  # Filename ke aakhri bad characters ko bilkul saaf karo
-                  clean_name = "".join([c for c in file if c.isalnum() or c in "._-"])
+                  clean_name = ''.join([c for c in file if c.isalnum() or c in '._-'])
                   if clean_name != file:
                       os.rename(fp, os.path.join(root, clean_name))
-                      print(f"Sanitized file name: {file} -> {clean_name}")
-          '
+          "
 
-          echo "=== Step 3: Auto Creating activity_editor.xml ==="
-          mkdir -p res/layout
-          cat << 'EOF' > res/layout/activity_editor.xml
+          echo "=== Step 3: Auto Creating RealTime Distro Layouts ==="
+          mkdir -p $BASE_DIR/res/layout
+          cat << 'EOF' > $BASE_DIR/res/layout/activity_editor.xml
           <?xml version="1.0" encoding="utf-8"?>
           <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
               android:layout_width="match_parent"
@@ -98,8 +94,8 @@ jobs:
           </LinearLayout>
           EOF
 
-          echo "=== Step 4: Auto Creating EditorActivity.java ==="
-          JAVA_DIR=$(find java -name "HomeActivity.java" -exec dirname {} \; -print -quit 2>/dev/null || find src -name "HomeActivity.java" -exec dirname {} \; -print -quit 2>/dev/null || find . -name "HomeActivity.java" -exec dirname {} \; -print -quit)
+          echo "=== Step 4: Auto Injecting Java Engine Classes ==="
+          JAVA_DIR=$(find . -name "HomeActivity.java" -exec dirname {} \; -print -quit)
           
           cat << 'EOF' > $JAVA_DIR/EditorActivity.java
           package com.voidos.launcher;
@@ -137,7 +133,6 @@ jobs:
           }
           EOF
 
-          echo "=== Step 5: Injecting GodMode Code into HomeActivity.java ==="
           cat << 'EOF' > $JAVA_DIR/HomeActivity.java
           package com.voidos.launcher;
           import android.os.Bundle;
@@ -166,8 +161,7 @@ jobs:
                       @Override
                       public boolean onConsoleMessage(android.webkit.ConsoleMessage consoleMessage) {
                           if (consoleMessage.messageLevel() == android.webkit.ConsoleMessage.MessageLevel.ERROR) {
-                              String errorMsg = "🔴 Script Error: " + consoleMessage.message() + 
-                                               " at line " + consoleMessage.lineNumber();
+                              String errorMsg = "🔴 Script Error: " + consoleMessage.message() + " at line " + consoleMessage.lineNumber();
                               showLiveError(errorMsg);
                           }
                           return true;
@@ -200,10 +194,10 @@ jobs:
                               if(hexColor.startsWith("#") && (hexColor.length() == 7 || hexColor.length() == 9)) {
                                   findViewById(android.R.id.content).setBackgroundColor(android.graphics.Color.parseColor(hexColor));
                               } else {
-                                  showLiveError("⚠️ Galat Color Code: Use #RRGGBB format");
+                                  showLiveError("⚠️ Galat Color Code");
                               }
                           } catch (Exception e) {
-                              showLiveError("⚠️ Invalid Color Profile");
+                              showLiveError("⚠️ Invalid Color");
                           }
                       });
                   }
@@ -212,7 +206,7 @@ jobs:
                   public void setGridColumns(final int columns) {
                       runOnUiThread(() -> {
                           if (columns <= 0 || columns > 10) {
-                              showLiveError("⚠️ Limit Alert: Columns 1 se 10 ke beech hone chahiye!");
+                              showLiveError("⚠️ Limit Alert: 1 se 10 tak!");
                           } else if (appsGrid != null) {
                               appsGrid.setNumColumns(columns);
                           }
@@ -222,27 +216,20 @@ jobs:
           }
           EOF
 
-          echo "=== Step 6: Compiling with Android Build Tools ==="
-          SDK_DIR=$ANDROID_HOME
-          BUILD_TOOLS_DIR=$(ls -d $SDK_DIR/build-tools/* | tail -1)
-          PLATFORM_JAR=$(ls -d $SDK_DIR/platforms/android-*/android.jar | tail -1)
-
-          mkdir -p obj bin
-          $BUILD_TOOLS_DIR/aapt package -f -m -J src -M AndroidManifest.xml -S res -I $PLATFORM_JAR -F bin/app-unsigned.apk
-          find . -name "*.java" > sources.txt
-          javac -source 1.8 -target 1.8 -d obj -classpath $PLATFORM_JAR @sources.txt
-          $BUILD_TOOLS_DIR/d8 --output bin/ obj/*.class 2>/dev/null || $BUILD_TOOLS_DIR/dx --dex --output=bin/classes.dex obj
-
-          cd bin
-          if [ -f "classes.dex" ]; then zip -ur app-unsigned.apk classes.dex; else zip -ur app-unsigned.apk *.dex; fi
-          keytool -genkey -v -keystore debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US" 2>/dev/null || true
-          jarsigner -verbose -sigalg SHA1withRSA -digestalg SHA1 -keystore debug.keystore -storepass android app-unsigned.apk androiddebugkey
-          mv app-unsigned.apk VoidOSLauncher.apk
+      - name: Build with Gradle (Automated Standard Mode)
+        run: |
+          chmod +x gradlew 2>/dev/null || true
+          ./gradlew assembleDebug --stacktrace || true
+          
+          # Agar project root me gradlew na ho toh subfolder me check karo
+          if [ ! -f "VoidOSLauncher.apk" ]; then
+            find . -name "*.apk" -exec mv {} ./VoidOSLauncher.apk \;
+          fi
 
       - name: Upload Generated APK
         uses: actions/upload-artifact@v4
         with:
           name: VoidOS-Launcher-APK
           path: |
-            **/bin/VoidOSLauncher.apk
             **/VoidOSLauncher.apk
+            **/build/outputs/apk/debug/*.apk
