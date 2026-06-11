@@ -15,9 +15,9 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Python Deep Clean and Manual Build
+      - name: Super Clean Copy and Manual Build
         run: |
-          echo "=== Step 1: Force Entering Sahi Folder ==="
+          echo "=== Step 1: Navigating to Main Folder ==="
           if [ -d "launcher/src/main" ]; then
             cd launcher/src/main
           elif [ -d "voidos-main/launcher/src/main" ]; then
@@ -27,40 +27,40 @@ jobs:
             cd $(dirname "$MANIFEST_PATH")
           fi
           
-          echo "Hamaari Final Build Location Hai: $(pwd)"
+          echo "Hamaari Location Hai: $(pwd)"
 
-          echo "=== Step 2: Python Se Hidden Windows Characters Ka Khatma ==="
-          # Yeh Python script files ke naam aur unke andar ka saara kachra saaf kar degi
+          echo "=== Step 2: Creating a Fresh Clean Resource Folder ==="
+          # Ek bilkul fresh folder banate hain bina kisi hidden Windows character ke
+          mkdir -p clean_res/layout
+          mkdir -p clean_res/values
+          mkdir -p clean_res/drawable 2>/dev/null || true
+          mkdir -p clean_res/mipmap-hdpi 2>/dev/null || true
+          mkdir -p clean_res/mipmap-mdpi 2>/dev/null || true
+          mkdir -p clean_res/mipmap-xhdpi 2>/dev/null || true
+          mkdir -p clean_res/mipmap-xxhdpi 2>/dev/null || true
+          mkdir -p clean_res/mipmap-xxxhdpi 2>/dev/null || true
+
+          # Saari files ko fresh folder me copy karte hain ek-ek karke taaki kachra saaf ho jaye
+          cp -r res/layout/* clean_res/layout/ 2>/dev/null || true
+          cp -r res/values/* clean_res/values/ 2>/dev/null || true
+          cp -r res/drawable*/* clean_res/drawable/ 2>/dev/null || true
+          cp -r res/mipmap*/* clean_res/mipmap-hdpi/ 2>/dev/null || true
+
+          # Python se naye folder ki ek-ek file ke andar ka text aur naam bilkul sanitize (saaf) karo
           python3 -c '
           import os
-          
-          # 1. Pehle saari files ke andar ka text saaf karo (\r\n ko \n banao)
-          for root, dirs, files in os.walk("."):
+          for root, dirs, files in os.walk("clean_res"):
               for file in files:
-                  file_path = os.path.join(root, file)
+                  fp = os.path.join(root, file)
+                  # Content saaf karo
                   try:
-                      with open(file_path, "rb") as f:
-                          content = f.read()
-                      clean_content = content.replace(b"\r\n", b"\n").replace(b"\r", b"")
-                      if clean_content != content:
-                          with open(file_path, "wb") as f:
-                              f.write(clean_content)
-                          print(f"Cleaned contents of: {file_path}")
-                  except Exception as e:
-                      pass
-
-          # 2. Ab files ke naam se \r saaf karo
-          for root, dirs, files in os.walk(".", topdown=False):
-              for name in files:
-                  if "\r" in name:
-                      clean_name = name.replace("\r", "")
-                      os.rename(os.path.join(root, name), os.path.join(root, clean_name))
-                      print(f"Renamed file: {name} -> {clean_name}")
-              for name in dirs:
-                  if "\r" in name:
-                      clean_name = name.replace("\r", "")
-                      os.rename(os.path.join(root, name), os.path.join(root, clean_name))
-                      print(f"Renamed folder: {name} -> {clean_name}")
+                      with open(fp, "rb") as f: content = f.read()
+                      clean = content.replace(b"\r\n", b"\n").replace(b"\r", b"")
+                      with open(fp, "wb") as f: f.write(clean)
+                  except: pass
+                  # Naam saaf karo agar \r ho
+                  if "\r" in file:
+                      os.rename(fp, os.path.join(root, file.replace("\r", "")))
           '
 
           echo "=== Step 3: Compiling with Android Build Tools ==="
@@ -70,11 +70,11 @@ jobs:
 
           mkdir -p obj bin
 
-          # 1. Package Resources (AAPT)
-          $BUILD_TOOLS_DIR/aapt package -f -m -J src -M AndroidManifest.xml -S res -I $PLATFORM_JAR -F bin/app-unsigned.apk
+          # 1. Package Resources (Ab hum hamare naye 'clean_res' folder ka use karenge!)
+          $BUILD_TOOLS_DIR/aapt package -f -m -J src -M AndroidManifest.xml -S clean_res -I $PLATFORM_JAR -F bin/app-unsigned.apk
 
           # 2. Compile Java Files
-          find . -name "*.java" > sources.txt
+          find . -name "*.java" -not -path "*/clean_res/*" > sources.txt
           javac -source 1.8 -target 1.8 -d obj -classpath $PLATFORM_JAR @sources.txt
 
           # 3. Dex Conversion (D8/DX)
