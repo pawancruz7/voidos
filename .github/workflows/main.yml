@@ -1,0 +1,245 @@
+name: Build Android APK with RealTime Engine
+on: [push, workflow_dispatch]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Build Native APK with Manifest Autofix
+        run: |
+          echo "=== Step 1: Identifying Repository Layout ==="
+          WORKSPACE_ROOT=$GITHUB_WORKSPACE
+          
+          if [ -f "$WORKSPACE_ROOT/AndroidManifest.xml" ]; then
+            BASE_DIR="$WORKSPACE_ROOT"
+          elif [ -d "$WORKSPACE_ROOT/launcher/src/main" ]; then
+            BASE_DIR="$WORKSPACE_ROOT/launcher/src/main"
+          else
+            MANIFEST_PATH=$(find $WORKSPACE_ROOT -name "AndroidManifest.xml" -not -path "*/build/*" -not -path "*/.*" -print -quit 2>/dev/null)
+            BASE_DIR=$(dirname "$MANIFEST_PATH")
+          fi
+          echo "Target Source Directory: $BASE_DIR"
+          cd $BASE_DIR
+
+          echo "=== Step 2: Overwriting Corrupted Manifest & Creating Layouts ==="
+          # Purani kharab manifest ko jadd se mitao aur fresh likho
+          rm -f AndroidManifest.xml
+          
+          cat << 'EOF' > AndroidManifest.xml
+          <?xml version="1.0" encoding="utf-8"?>
+          <manifest xmlns:android="http://schemas.android.com/apk/res/android"
+              package="com.voidos.launcher"
+              android:versionCode="1"
+              android:versionName="1.0">
+
+              <application
+                  android:label="VoidOS Launcher"
+                  android:theme="@android:style/Theme.NoTitleBar.Fullscreen">
+                  
+                  <activity
+                      android:name="com.voidos.launcher.HomeActivity"
+                      android:exported="true">
+                      <intent-filter>
+                          <action android:name="android.intent.action.MAIN" />
+                          <category android:name="android.intent.category.LAUNCHER" />
+                          <category android:name="android.intent.category.HOME" />
+                          <category android:name="android.intent.category.DEFAULT" />
+                      </intent-filter>
+                  </activity>
+
+                  <activity 
+                      android:name="com.voidos.launcher.EditorActivity"
+                      android:exported="true" />
+              </application>
+          </manifest>
+          EOF
+
+          # Creating Clean Resource Folders
+          mkdir -p res/layout
+
+          # activity_home.xml (Fresh Build)
+          cat << 'EOF' > res/layout/activity_home.xml
+          <?xml version="1.0" encoding="utf-8"?>
+          <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+              android:layout_width="match_parent"
+              android:layout_height="match_parent"
+              android:background="#000000">
+              <GridView
+                  android:id="@+id/apps_grid"
+                  android:layout_width="match_parent"
+                  android:layout_height="match_parent"
+                  android:numColumns="4"
+                  android:verticalSpacing="10dp"
+                  android:horizontalSpacing="10dp"
+                  android:stretchMode="columnWidth"
+                  android:gravity="center" />
+          </RelativeLayout>
+          EOF
+
+          # activity_editor.xml (Live Code Dashboard)
+          cat << 'EOF' > res/layout/activity_editor.xml
+          <?xml version="1.0" encoding="utf-8"?>
+          <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+              android:layout_width="match_parent"
+              android:layout_height="match_parent"
+              android:orientation="vertical"
+              android:background="#121212"
+              android:padding="16dp">
+              <TextView
+                  android:layout_width="wrap_content"
+                  android:layout_height="wrap_content"
+                  android:text="VoidOS Live Distro Script Editor"
+                  android:textColor="#00FF00"
+                  android:textSize="18sp"
+                  android:textStyle="bold" />
+              <EditText
+                  android:id="@+id/code_input"
+                  android:layout_width="match_parent"
+                  android:layout_height="0dp"
+                  android:layout_weight="1"
+                  android:gravity="top|start"
+                  android:background="#1E1E1E"
+                  android:textColor="#00FF00"
+                  android:fontFamily="monospace"
+                  android:padding="12dp" />
+              <Button
+                  android:id="@+id/btn_apply"
+                  android:layout_width="match_parent"
+                  android:layout_height="wrap_content"
+                  android:text="Flash Script Live ⚡" />
+          </LinearLayout>
+          EOF
+
+          echo "=== Step 3: Sanitizing Asset Filenames ==="
+          python3 -c "
+          import os
+          if os.path.exists('res'):
+              for root, dirs, files in os.walk('res'):
+                  for file in files:
+                      fp = os.path.join(root, file)
+                      clean_name = ''.join([c for c in file if c.isalnum() or c in '._-'])
+                      if clean_name != file:
+                          os.rename(fp, os.path.join(root, clean_name))
+          "
+
+          echo "=== Step 4: Injecting Pure Android OS Engine Classes ==="
+          # Fixed pipe error by suppressing find logs
+          JAVA_DIR=$(find . -name "AppsAdapter.java" -exec dirname {} \; 2>/dev/null | head -n 1)
+          if [ -z "$JAVA_DIR" ]; then JAVA_DIR=$(find . -name "HomeActivity.java" -exec dirname {} \; 2>/dev/null | head -n 1); fi
+          if [ -z "$JAVA_DIR" ]; then JAVA_DIR="."; fi
+          echo "Target Java Directory: $JAVA_DIR"
+
+          cat << 'EOF' > "$JAVA_DIR/EditorActivity.java"
+          package com.voidos.launcher;
+          import android.content.Context;
+          import android.content.SharedPreferences;
+          import android.os.Bundle;
+          import android.widget.Button;
+          import android.widget.EditText;
+          import android.app.Activity;
+          
+          public class EditorActivity extends Activity {
+              @Override
+              protected void onCreate(Bundle savedInstanceState) {
+                  super.onCreate(savedInstanceState);
+                  setContentView(R.layout.activity_editor);
+                  EditText input = findViewById(R.id.code_input);
+                  Button btn = findViewById(R.id.btn_apply);
+                  SharedPreferences prefs = getSharedPreferences("VoidOS_Prefs", Context.MODE_PRIVATE);
+                  input.setText(prefs.getString("custom_js", ""));
+                  btn.setOnClickListener(v -> {
+                      prefs.edit().putString("custom_js", input.getText().toString()).apply();
+                      if (HomeActivity.instance != null) {
+                          HomeActivity.instance.executeConfigCode(input.getText().toString());
+                      }
+                      finish();
+                  });
+              }
+          }
+          EOF
+          
+          cat << 'EOF' > "$JAVA_DIR/HomeActivity.java"
+          package com.voidos.launcher;
+          import android.os.Bundle;
+          import android.widget.GridView;
+          import android.widget.Toast;
+          import android.app.Activity;
+          
+          public class HomeActivity extends Activity {
+              public static HomeActivity instance;
+              private android.webkit.WebView jsEngine;
+          
+              @Override
+              protected void onCreate(Bundle savedInstanceState) {
+                  super.onCreate(savedInstanceState);
+                  setContentView(R.layout.activity_home);
+                  instance = this;
+                  jsEngine = new android.webkit.WebView(this);
+                  jsEngine.getSettings().setJavaScriptEnabled(true);
+                  jsEngine.addJavascriptInterface(new VoidOSBridge(), "voidOS");
+              }
+          
+              public void executeConfigCode(final String jsScript) {
+                  runOnUiThread(() -> jsEngine.evaluateJavascript(jsScript, null));
+              }
+          
+              public class VoidOSBridge {
+                  @android.webkit.JavascriptInterface
+                  public void setBgColor(final String hexColor) {
+                      runOnUiThread(() -> findViewById(android.R.id.content).setBackgroundColor(android.graphics.Color.parseColor(hexColor)));
+                  }
+              }
+          }
+          EOF
+
+          echo "=== Step 5: Native Compilation via Android Build Tools ==="
+          SDK_DIR=$ANDROID_HOME
+          BUILD_TOOLS_DIR=$(ls -d $SDK_DIR/build-tools/* | tail -1)
+          PLATFORM_JAR=$(ls -d $SDK_DIR/platforms/android-*/android.jar | tail -1)
+
+          mkdir -p obj bin
+
+          echo "Packaging Resources via AAPT..."
+          $BUILD_TOOLS_DIR/aapt package -f -m -J src -M AndroidManifest.xml -S res -I $PLATFORM_JAR -F bin/app-unsigned.apk
+
+          echo "Compiling Java Sources via Javac..."
+          find . -name "*.java" > sources.txt
+          javac -source 1.8 -target 1.8 -d obj -classpath $PLATFORM_JAR @sources.txt
+
+          echo "Converting bytecode to DEX..."
+          if [ -d "obj" ] && [ "$(ls -A obj)" ]; then
+            $BUILD_TOOLS_DIR/d8 --output bin/ obj/*.class 2>/dev/null || $BUILD_TOOLS_DIR/dx --dex --output=bin/classes.dex obj
+          fi
+
+          echo "Assembling & Aligning Final Packages..."
+          cd bin
+          if [ -f "classes.dex" ]; then
+            zip -ur app-unsigned.apk classes.dex
+          elif ls *.dex &>/dev/null; then
+            zip -ur app-unsigned.apk *.dex
+          fi
+
+          keytool -genkey -v -keystore debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US" 2>/dev/null || true
+          jarsigner -verbose -sigalg SHA1withRSA -digestalg SHA1 -keystore debug.keystore -storepass android app-unsigned.apk androiddebugkey
+
+          # Clean final target storage using static path variables
+          mkdir -p $WORKSPACE_ROOT/final_out
+          mv app-unsigned.apk $WORKSPACE_ROOT/final_out/VoidOSLauncher.apk
+          echo "Native Compilation Complete!"
+
+      - name: Upload Verified Artifact APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: VoidOS-Launcher-APK
+          path: final_out/VoidOSLauncher.apk
+          
