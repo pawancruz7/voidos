@@ -15,49 +15,67 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Hardcoded Path Manual Build
+      - name: Python Deep Clean and Manual Build
         run: |
           echo "=== Step 1: Force Entering Sahi Folder ==="
-          # Sabse pehle manually check karenge bina kisi automated search ke
           if [ -d "launcher/src/main" ]; then
             cd launcher/src/main
           elif [ -d "voidos-main/launcher/src/main" ]; then
             cd voidos-main/launcher/src/main
           else
-            echo "Hardcoded folders nahi mile, fall back to find command..."
             MANIFEST_PATH=$(find . -name "AndroidManifest.xml" -not -path "*/build/*" -not -path "*/.*" -print -quit)
             cd $(dirname "$MANIFEST_PATH")
           fi
           
           echo "Hamaari Final Build Location Hai: $(pwd)"
 
-          echo "=== Step 2: Cleaning Hidden Windows Characters Inside Project ==="
-          find . -depth -name "*"$'\r'"*" -exec sh -c 'for f; do mv "$f" "$(echo "$f" | tr -d "\r")"; done' _ {} +
+          echo "=== Step 2: Python Se Hidden Windows Characters Ka Khatma ==="
+          # Yeh Python script files ke naam aur unke andar ka saara kachra saaf kar degi
+          python3 -c '
+          import os
+          
+          # 1. Pehle saari files ke andar ka text saaf karo (\r\n ko \n banao)
+          for root, dirs, files in os.walk("."):
+              for file in files:
+                  file_path = os.path.join(root, file)
+                  try:
+                      with open(file_path, "rb") as f:
+                          content = f.read()
+                      clean_content = content.replace(b"\r\n", b"\n").replace(b"\r", b"")
+                      if clean_content != content:
+                          with open(file_path, "wb") as f:
+                              f.write(clean_content)
+                          print(f"Cleaned contents of: {file_path}")
+                  except Exception as e:
+                      pass
+
+          # 2. Ab files ke naam se \r saaf karo
+          for root, dirs, files in os.walk(".", topdown=False):
+              for name in files:
+                  if "\r" in name:
+                      clean_name = name.replace("\r", "")
+                      os.rename(os.path.join(root, name), os.path.join(root, clean_name))
+                      print(f"Renamed file: {name} -> {clean_name}")
+              for name in dirs:
+                  if "\r" in name:
+                      clean_name = name.replace("\r", "")
+                      os.rename(os.path.join(root, name), os.path.join(root, clean_name))
+                      print(f"Renamed folder: {name} -> {clean_name}")
+          '
 
           echo "=== Step 3: Compiling with Android Build Tools ==="
           SDK_DIR=$ANDROID_HOME
           BUILD_TOOLS_DIR=$(ls -d $SDK_DIR/build-tools/* | tail -1)
           PLATFORM_JAR=$(ls -d $SDK_DIR/platforms/android-*/android.jar | tail -1)
 
-          echo "Using Tools from: $BUILD_TOOLS_DIR"
-
           mkdir -p obj bin
 
-          # 1. Package Resources (AAPT / AAPT2 Fallback)
-          $BUILD_TOOLS_DIR/aapt package -f -m -J src -M AndroidManifest.xml -S res -I $PLATFORM_JAR -F bin/app-unsigned.apk || \
-          ($BUILD_TOOLS_DIR/aapt2 compile --dir res -o compiled_res.zip && $BUILD_TOOLS_DIR/aapt2 link --manifest AndroidManifest.xml -I $PLATFORM_JAR -o bin/app-unsigned.apk compiled_res.zip)
+          # 1. Package Resources (AAPT)
+          $BUILD_TOOLS_DIR/aapt package -f -m -J src -M AndroidManifest.xml -S res -I $PLATFORM_JAR -F bin/app-unsigned.apk
 
           # 2. Compile Java Files
-          if [ -d "java" ]; then
-            find java -name "*.java" > sources.txt
-          elif [ -d "src" ]; then
-            find src -name "*.java" > sources.txt
-          else
-            find . -name "*.java" > sources.txt
-          fi
-
-          javac -source 1.8 -target 1.8 -d obj -classpath $PLATFORM_JAR @sources.txt || \
-          javac -source 1.7 -target 1.7 -d obj -classpath $PLATFORM_JAR @sources.txt
+          find . -name "*.java" > sources.txt
+          javac -source 1.8 -target 1.8 -d obj -classpath $PLATFORM_JAR @sources.txt
 
           # 3. Dex Conversion (D8/DX)
           $BUILD_TOOLS_DIR/d8 --output bin/ obj/*.class 2>/dev/null || \
