@@ -15,20 +15,27 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
 
-      - name: Build with Gradle
+      - name: Force Build Android Project
         run: |
-          # 1. Pehle hum us sahi folder ke andar ghusenge jahan tumhara asli project hai
-          if [ -d "voidos-main/launcher" ]; then
-            cd voidos-main
-          elif [ -d "launcher" ]; then
-            echo "Launcher folder mil gaya!"
-          else
-            echo "Searching for project root..."
-            SETTINGS_PATH=$(find . -name "settings.gradle" -print -quit)
-            cd $(dirname "$SETTINGS_PATH")
+          # 1. Sabse pehle dhoondho ki settings.gradle kahan hai (wahi project ka main center hai)
+          SETTINGS_PATH=$(find . -name "settings.gradle" -print -quit)
+          
+          if [ -z "$SETTINGS_PATH" ]; then
+            echo "Error: settings.gradle nahi mili!"
+            exit 1
+          fi
+          
+          PROJECT_ROOT=$(dirname "$SETTINGS_PATH")
+          cd "$PROJECT_ROOT"
+          echo "Project Root mil gaya: $PROJECT_ROOT"
+
+          # 2. Agar gradlew file nahi hai, toh hum naye gradle wrapper se use khud banayenge
+          if [ ! -f "gradlew" ]; then
+            echo "gradlew missing thi, naye wrapper se generate kar rahe hain..."
+            gradle wrapper
           fi
 
-          # 2. Permission fix karo aur build run karo
+          # 3. Permission dekar build process shuru karo
           chmod +x gradlew
           ./gradlew assembleDebug
 
