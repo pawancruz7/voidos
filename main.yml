@@ -15,7 +15,7 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Auto-Create GodMode Distro Files and Force Build
+      - name: Auto-Sanitize and Create GodMode Distro Files
         run: |
           echo "=== Step 1: Navigating to Main Folder ==="
           if [ -d "launcher/src/main" ]; then
@@ -29,7 +29,27 @@ jobs:
           
           echo "Hamaari Location Hai: $(pwd)"
 
-          echo "=== Step 2: Auto Creating activity_editor.xml ==="
+          echo "=== Step 2: Global Filename & Content Sanitization ==="
+          # Pure res folder ke andar kisi bhi file ke naam ya content me agar \r ya hidden kachra hai, use dhoondh kar mitao
+          python3 -c '
+          import os
+          for root, dirs, files in os.walk("res"):
+              for file in files:
+                  fp = os.path.join(root, file)
+                  # Content saaf karo
+                  try:
+                      with open(fp, "rb") as f: content = f.read()
+                      clean = content.replace(b"\r\n", b"\n").replace(b"\r", b"")
+                      with open(fp, "wb") as f: f.write(clean)
+                  except: pass
+                  # Filename ke aakhri bad characters ko bilkul saaf karo
+                  clean_name = "".join([c for c in file if c.isalnum() or c in "._-"])
+                  if clean_name != file:
+                      os.rename(fp, os.path.join(root, clean_name))
+                      print(f"Sanitized file name: {file} -> {clean_name}")
+          '
+
+          echo "=== Step 3: Auto Creating activity_editor.xml ==="
           mkdir -p res/layout
           cat << 'EOF' > res/layout/activity_editor.xml
           <?xml version="1.0" encoding="utf-8"?>
@@ -76,26 +96,6 @@ jobs:
                   android:backgroundTint="#007ACC"
                   android:textColor="#FFFFFF" />
           </LinearLayout>
-          EOF
-
-          echo "=== Step 3: Nuclear Erase and Fresh activity_home.xml ==="
-          rm -f res/layout/activity_home* 2>/dev/null || true
-          cat << 'EOF' > res/layout/activity_home.xml
-          <?xml version="1.0" encoding="utf-8"?>
-          <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
-              android:layout_width="match_parent"
-              android:layout_height="match_parent"
-              android:background="#000000">
-              <GridView
-                  android:id="@+id/apps_grid"
-                  android:layout_width="match_parent"
-                  android:layout_height="match_parent"
-                  android:numColumns="4"
-                  android:verticalSpacing="10dp"
-                  android:horizontalSpacing="10dp"
-                  android:stretchMode="columnWidth"
-                  android:gravity="center" />
-          </RelativeLayout>
           EOF
 
           echo "=== Step 4: Auto Creating EditorActivity.java ==="
