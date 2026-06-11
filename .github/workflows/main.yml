@@ -15,21 +15,21 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Ultimate Manual Build
+      - name: Hardcoded Path Manual Build
         run: |
           echo "=== Step 1: Force Entering Sahi Folder ==="
-          # Ab hum dhoondhenge nahi, seedha sahi folder ke andar entry maarenge
+          # Sabse pehle manually check karenge bina kisi automated search ke
           if [ -d "launcher/src/main" ]; then
             cd launcher/src/main
           elif [ -d "voidos-main/launcher/src/main" ]; then
             cd voidos-main/launcher/src/main
           else
-            # Agar folder ka naam thoda aage piche ho, toh fallback
+            echo "Hardcoded folders nahi mile, fall back to find command..."
             MANIFEST_PATH=$(find . -name "AndroidManifest.xml" -not -path "*/build/*" -not -path "*/.*" -print -quit)
             cd $(dirname "$MANIFEST_PATH")
           fi
           
-          echo "Hamaari Current Location Hai: $(pwd)"
+          echo "Hamaari Final Build Location Hai: $(pwd)"
 
           echo "=== Step 2: Cleaning Hidden Windows Characters Inside Project ==="
           find . -depth -name "*"$'\r'"*" -exec sh -c 'for f; do mv "$f" "$(echo "$f" | tr -d "\r")"; done' _ {} +
@@ -43,7 +43,7 @@ jobs:
 
           mkdir -p obj bin
 
-          # 1. Package Resources
+          # 1. Package Resources (AAPT / AAPT2 Fallback)
           $BUILD_TOOLS_DIR/aapt package -f -m -J src -M AndroidManifest.xml -S res -I $PLATFORM_JAR -F bin/app-unsigned.apk || \
           ($BUILD_TOOLS_DIR/aapt2 compile --dir res -o compiled_res.zip && $BUILD_TOOLS_DIR/aapt2 link --manifest AndroidManifest.xml -I $PLATFORM_JAR -o bin/app-unsigned.apk compiled_res.zip)
 
