@@ -1,0 +1,169 @@
+name: Build Android APK with RealTime Engine
+on: [push, workflow_dispatch]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Dynamic Path Locator and File Setup
+        run: |
+          echo "=== Step 1: Locating Android Source ==="
+          if [ -f "AndroidManifest.xml" ]; then
+            BASE_DIR="."
+          elif [ -d "launcher/src/main" ]; then
+            BASE_DIR="launcher/src/main"
+          else
+            MANIFEST_PATH=$(find . -name "AndroidManifest.xml" -not -path "*/build/*" -not -path "*/.*" -print -quit)
+            BASE_DIR=$(dirname "$MANIFEST_PATH")
+          fi
+          echo "Hamaari Main Location Hai: $BASE_DIR"
+
+          echo "=== Step 2: Cleaning Bad Windows Characters ==="
+          python3 -c "
+          import os
+          for root, dirs, files in os.walk('$BASE_DIR'):
+              for file in files:
+                  if file.endswith('.xml') or file.endswith('.java'):
+                      fp = os.path.join(root, file)
+                      try:
+                          with open(fp, 'rb') as f: content = f.read()
+                          clean = content.replace(b'\r\n', b'\n').replace(b'\r', b'')
+                          with open(fp, 'wb') as f: f.write(clean)
+                      except: pass
+          "
+
+          echo "=== Step 3: Injecting Editor Layout ==="
+          mkdir -p $BASE_DIR/res/layout
+          cat << 'EOF' > $BASE_DIR/res/layout/activity_editor.xml
+          <?xml version="1.0" encoding="utf-8"?>
+          <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+              android:layout_width="match_parent"
+              android:layout_height="match_parent"
+              android:orientation="vertical"
+              android:background="#121212"
+              android:padding="16dp">
+              <TextView
+                  android:layout_width="wrap_content"
+                  android:layout_height="wrap_content"
+                  android:text="VoidOS Live Distro Script Editor"
+                  android:textColor="#00FF00"
+                  android:textSize="18sp"
+                  android:textStyle="bold" />
+              <EditText
+                  android:id="@+id/code_input"
+                  android:layout_width="match_parent"
+                  android:layout_height="0dp"
+                  android:layout_weight="1"
+                  android:gravity="top|start"
+                  android:background="#1E1E1E"
+                  android:textColor="#00FF00"
+                  android:fontFamily="monospace"
+                  android:padding="12dp" />
+              <Button
+                  android:id="@+id/btn_apply"
+                  android:layout_width="match_parent"
+                  android:layout_height="wrap_content"
+                  android:text="Flash Script Live ⚡" />
+          </LinearLayout>
+          EOF
+
+          echo "=== Step 4: Injecting Java Classes ==="
+          JAVA_DIR=$(find . -name "AppsAdapter.java" -exec dirname {} \; | head -n 1)
+          if [ -z "$JAVA_DIR" ]; then
+            JAVA_DIR=$(find . -name "HomeActivity.java" -exec dirname {} \; | head -n 1)
+          fi
+          if [ -z "$JAVA_DIR" ]; then
+            JAVA_DIR="."
+          fi
+          echo "Java Files Ki Location Hai: $JAVA_DIR"
+          
+          cat << 'EOF' > "$JAVA_DIR/EditorActivity.java"
+          package com.voidos.launcher;
+          import android.content.Context;
+          import android.content.SharedPreferences;
+          import android.os.Bundle;
+          import android.widget.Button;
+          import android.widget.EditText;
+          import androidx.appcompat.app.AppCompatActivity;
+          
+          public class EditorActivity extends AppCompatActivity {
+              @Override
+              protected void onCreate(Bundle savedInstanceState) {
+                  super.onCreate(savedInstanceState);
+                  setContentView(R.layout.activity_editor);
+                  EditText input = findViewById(R.id.code_input);
+                  Button btn = findViewById(R.id.btn_apply);
+                  SharedPreferences prefs = getSharedPreferences("VoidOS_Prefs", Context.MODE_PRIVATE);
+                  input.setText(prefs.getString("custom_js", ""));
+                  btn.setOnClickListener(v -> {
+                      prefs.edit().putString("custom_js", input.getText().toString()).apply();
+                      if (HomeActivity.instance != null) {
+                          HomeActivity.instance.executeConfigCode(input.getText().toString());
+                      }
+                      finish();
+                  });
+              }
+          }
+          EOF
+          
+          cat << 'EOF' > "$JAVA_DIR/HomeActivity.java"
+          package com.voidos.launcher;
+          import android.os.Bundle;
+          import android.widget.GridView;
+          import android.widget.Toast;
+          import androidx.appcompat.app.AppCompatActivity;
+          
+          public class HomeActivity extends AppCompatActivity {
+              public static HomeActivity instance;
+              private android.webkit.WebView jsEngine;
+          
+              @Override
+              protected void onCreate(Bundle savedInstanceState) {
+                  super.onCreate(savedInstanceState);
+                  setContentView(R.layout.activity_home);
+                  instance = this;
+                  jsEngine = new android.webkit.WebView(this);
+                  jsEngine.getSettings().setJavaScriptEnabled(true);
+                  jsEngine.addJavascriptInterface(new VoidOSBridge(), "voidOS");
+              }
+          
+              public void executeConfigCode(final String jsScript) {
+                  runOnUiThread(() -> jsEngine.evaluateJavascript(jsScript, null));
+              }
+          
+              public class VoidOSBridge {
+                  @android.webkit.JavascriptInterface
+                  public void setBgColor(final String hexColor) {
+                      runOnUiThread(() -> findViewById(android.R.id.content).setBackgroundColor(android.graphics.Color.parseColor(hexColor)));
+                  }
+              }
+          }
+          EOF
+
+      - name: Build Android APK
+        run: |
+          chmod +x gradlew 2>/dev/null || true
+          ./gradlew assembleDebug --stacktrace || true
+          
+          echo "=== Step 5: Hunting for Generated APK ==="
+          mkdir -p output_apk
+          # Poore project folder me kahin bhi .apk file bani ho, use dhoondh kar copy karo
+          find . -name "*.apk" -type f -exec cp {} ./output_apk/VoidOSLauncher.apk \;
+          echo "APK Hunting Done!"
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: VoidOS-Launcher-APK
+          path: output_apk/VoidOSLauncher.apk
+          
