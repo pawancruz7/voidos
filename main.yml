@@ -158,12 +158,10 @@ jobs:
                   instance = this;
                   appsGrid = findViewById(R.id.apps_grid);
 
-                  // WebView Sandbox Setup
                   jsEngine = new android.webkit.WebView(this);
                   jsEngine.getSettings().setJavaScriptEnabled(true);
                   jsEngine.addJavascriptInterface(new VoidOSBridge(), "voidOS");
 
-                  // Advanced Error Handling for JavaScript
                   jsEngine.setWebChromeClient(new android.webkit.WebChromeClient() {
                       @Override
                       public boolean onConsoleMessage(android.webkit.ConsoleMessage consoleMessage) {
@@ -185,7 +183,6 @@ jobs:
 
               public void executeConfigCode(final String jsScript) {
                   runOnUiThread(() -> {
-                      // JavaScript Try-Catch Block to prevent ANY crash
                       String safeWrappedCode = "try { " + jsScript + " } catch(err) { console.error(err.message); }";
                       jsEngine.evaluateJavascript(safeWrappedCode, null);
                   });
@@ -200,7 +197,6 @@ jobs:
                   public void setBgColor(final String hexColor) {
                       runOnUiThread(() -> {
                           try {
-                              // Validating Hex Color before applying to prevent freeze
                               if(hexColor.startsWith("#") && (hexColor.length() == 7 || hexColor.length() == 9)) {
                                   findViewById(android.R.id.content).setBackgroundColor(android.graphics.Color.parseColor(hexColor));
                               } else {
@@ -215,7 +211,6 @@ jobs:
                   @android.webkit.JavascriptInterface
                   public void setGridColumns(final int columns) {
                       runOnUiThread(() -> {
-                          // Logical Validation to prevent bad grid rendering
                           if (columns <= 0 || columns > 10) {
                               showLiveError("⚠️ Limit Alert: Columns 1 se 10 ke beech hone chahiye!");
                           } else if (appsGrid != null) {
