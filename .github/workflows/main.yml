@@ -1,12 +1,101 @@
-name: Scan Project Structure
+name: Build Android APK
 on: [push, workflow_dispatch]
 jobs:
-  scan:
+  build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      
-      - name: List All Files and Folders
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Smart Auto Build
         run: |
-          echo "=== YAHAN DEKHO SAARI FILES KI LIST ==="
-          find . -maxdepth 4 -not -path '*/.*'
+          echo "=== Step 1: Locating Android Project Files ==="
+          MANIFEST_PATH=$(find . -name "AndroidManifest.xml" -not -path "*/build/*" -not -path "*/.*" -print -quit)
+          
+          if [ -z "$MANIFEST_PATH" ]; then
+            echo "Error: AndroidManifest.xml poore project me kahin nahi mili!"
+            exit 1
+          fi
+          
+          LAUNCHER_DIR=$(dirname $(dirname $(dirname $(dirname "$MANIFEST_PATH"))))
+          if [ ! -f "$LAUNCHER_DIR/build.gradle" ] && [ ! -f "$LAUNCHER_DIR/build.gradle.kts" ]; then
+            LAUNCHER_DIR=$(dirname $(dirname $(dirname "$MANIFEST_PATH")))
+          fi
+          if [ ! -f "$LAUNCHER_DIR/build.gradle" ] && [ ! -f "$LAUNCHER_DIR/build.gradle.kts" ]; then
+            LAUNCHER_DIR=$(dirname "$MANIFEST_PATH")
+          fi
+          
+          echo "Target Directory Selected: $LAUNCHER_DIR"
+          cd "$LAUNCHER_DIR"
+
+          echo "=== Step 2: Attempting Gradle Build ==="
+          if [ -f "gradlew" ] || [ -f "../gradlew" ]; then
+            chmod +x gradlew 2>/dev/null || chmod +x ../gradlew 2>/dev/null
+            (./gradlew assembleDebug || ../gradlew assembleDebug) && exit 0
+          fi
+          
+          # Agar wrapper nahi mila toh system gradle try karege
+          if command -v gradle &> /dev/null; then
+            gradle assembleDebug && exit 0
+          fi
+
+          echo "=== Step 3: Gradle Failed, Switching to Manual Force Build ==="
+          # Sahi variables nikaalo
+          SDK_DIR=$ANDROID_HOME
+          BUILD_TOOLS_DIR=$(ls -d $SDK_DIR/build-tools/* | tail -1)
+          PLATFORM_JAR=$(ls -d $SDK_DIR/platforms/android-*/android.jar | tail -1)
+          
+          echo "Using Tools from: $BUILD_TOOLS_DIR"
+          
+          # Paths setup karo manifest ke relative
+          M_XML=$(find . -name "AndroidManifest.xml" -print -quit)
+          R_DIR=$(find . -name "res" -type d -not -path "*/build/*" -print -quit)
+          S_DIR=$(find . -name "java" -type d -print -quit)
+          if [ -z "$S_DIR" ]; then S_DIR=$(find . -name "src" -type d -print -quit); fi
+
+          mkdir -p obj bin
+          
+          # Link and Package Resources using AAPT2
+          $BUILD_TOOLS_DIR/aapt2 compile --dir $R_DIR -o compiled_res.zip 2>/dev/null || true
+          $BUILD_TOOLS_DIR/aapt2 link --manifest $M_XML -I $PLATFORM_JAR -o bin/app-unsigned.apk compiled_res.zip --java src 2>/dev/null || \
+          $BUILD_TOOLS_DIR/aapt package -f -m -J src -M $M_XML -S $R_DIR -I $PLATFORM_JAR -F bin/app-unsigned.apk
+          
+          # Compile Java
+          find . -name "*.java" > sources.txt
+          javac -source 1.8 -target 1.8 -d obj -classpath $PLATFORM_JAR @sources.txt || \
+          javac -source 1.7 -target 1.7 -d obj -classpath $PLATFORM_JAR @sources.txt
+          
+          # Dex Conversion
+          $BUILD_TOOLS_DIR/d8 --output bin/ obj/*.class 2>/dev/null || \
+          $BUILD_TOOLS_DIR/dx --dex --output=bin/classes.dex obj
+          
+          # Add classes back to APK
+          cd bin
+          if [ -f "classes.dex" ]; then
+            zip -ur app-unsigned.apk classes.dex
+          else
+            zip -ur app-unsigned.apk *.dex
+          fi
+          
+          # Sign APK
+          keytool -genkey -v -keystore debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US" 2>/dev/null || true
+          jarsigner -verbose -sigalg SHA1withRSA -digestalg SHA1 -keystore debug.keystore -storepass android app-unsigned.apk androiddebugkey
+          
+          mv app-unsigned.apk SimpleLauncher.apk
+
+      - name: Upload Generated APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: VoidOS-Output-APK
+          path: |
+            **/build/outputs/apk/debug/*.apk
+            **/bin/SimpleLauncher.apk
+            **/SimpleLauncher.apk
