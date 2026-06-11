@@ -1,0 +1,253 @@
+name: Build Android APK with RealTime Engine
+on: [push, workflow_dispatch]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Auto-Create GodMode Distro Files and Force Build
+        run: |
+          echo "=== Step 1: Navigating to Main Folder ==="
+          if [ -d "launcher/src/main" ]; then
+            cd launcher/src/main
+          elif [ -d "voidos-main/launcher/src/main" ]; then
+            cd voidos-main/launcher/src/main
+          else
+            MANIFEST_PATH=$(find . -name "AndroidManifest.xml" -not -path "*/build/*" -not -path "*/.*" -print -quit)
+            cd $(dirname "$MANIFEST_PATH")
+          fi
+          
+          echo "Hamaari Location Hai: $(pwd)"
+
+          echo "=== Step 2: Auto Creating activity_editor.xml ==="
+          mkdir -p res/layout
+          cat << 'EOF' > res/layout/activity_editor.xml
+          <?xml version="1.0" encoding="utf-8"?>
+          <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+              android:layout_width="match_parent"
+              android:layout_height="match_parent"
+              android:orientation="vertical"
+              android:background="#121212"
+              android:padding="16dp">
+              <TextView
+                  android:layout_width="wrap_content"
+                  android:layout_height="wrap_content"
+                  android:text="VoidOS Live Distro Script Editor"
+                  android:textColor="#00FF00"
+                  android:textSize="18sp"
+                  android:layout_marginBottom="4dp"
+                  android:textStyle="bold" />
+              <TextView
+                  android:layout_width="wrap_content"
+                  android:layout_height="wrap_content"
+                  android:text="⚠️ Warning: Galat code se UI freeze ho sakti hai, par Crash nahi hoga."
+                  android:textColor="#FFA500"
+                  android:textSize="12sp"
+                  android:layout_marginBottom="8dp" />
+              <EditText
+                  android:id="@+id/code_input"
+                  android:layout_width="match_parent"
+                  android:layout_height="0dp"
+                  android:layout_weight="1"
+                  android:gravity="top|start"
+                  android:background="#1E1E1E"
+                  android:textColor="#00FF00"
+                  android:fontFamily="monospace"
+                  android:hint="// Example:\n// voidOS.setBgColor('#FF0000');\n// voidOS.setGridColumns(5);"
+                  android:textColorHint="#555555"
+                  android:padding="12dp"
+                  android:scrollbars="vertical" />
+              <Button
+                  android:id="@+id/btn_apply"
+                  android:layout_width="match_parent"
+                  android:layout_height="wrap_content"
+                  android:layout_marginTop="12dp"
+                  android:text="Flash Script Live ⚡"
+                  android:backgroundTint="#007ACC"
+                  android:textColor="#FFFFFF" />
+          </LinearLayout>
+          EOF
+
+          echo "=== Step 3: Nuclear Erase and Fresh activity_home.xml ==="
+          rm -f res/layout/activity_home* 2>/dev/null || true
+          cat << 'EOF' > res/layout/activity_home.xml
+          <?xml version="1.0" encoding="utf-8"?>
+          <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+              android:layout_width="match_parent"
+              android:layout_height="match_parent"
+              android:background="#000000">
+              <GridView
+                  android:id="@+id/apps_grid"
+                  android:layout_width="match_parent"
+                  android:layout_height="match_parent"
+                  android:numColumns="4"
+                  android:verticalSpacing="10dp"
+                  android:horizontalSpacing="10dp"
+                  android:stretchMode="columnWidth"
+                  android:gravity="center" />
+          </RelativeLayout>
+          EOF
+
+          echo "=== Step 4: Auto Creating EditorActivity.java ==="
+          JAVA_DIR=$(find java -name "HomeActivity.java" -exec dirname {} \; -print -quit 2>/dev/null || find src -name "HomeActivity.java" -exec dirname {} \; -print -quit 2>/dev/null || find . -name "HomeActivity.java" -exec dirname {} \; -print -quit)
+          
+          cat << 'EOF' > $JAVA_DIR/EditorActivity.java
+          package com.voidos.launcher;
+          import android.content.Context;
+          import android.content.SharedPreferences;
+          import android.os.Bundle;
+          import android.view.View;
+          import android.widget.Button;
+          import android.widget.EditText;
+          import androidx.appcompat.app.AppCompatActivity;
+
+          public class EditorActivity extends AppCompatActivity {
+              private EditText codeInput;
+              private Button btnApply;
+              private SharedPreferences sharedPreferences;
+
+              @Override
+              protected void onCreate(Bundle savedInstanceState) {
+                  super.onCreate(savedInstanceState);
+                  setContentView(R.layout.activity_editor);
+                  codeInput = findViewById(R.id.code_input);
+                  btnApply = findViewById(R.id.btn_apply);
+                  sharedPreferences = getSharedPreferences("VoidOS_Prefs", Context.MODE_PRIVATE);
+                  String savedCode = sharedPreferences.getString("custom_js", "");
+                  codeInput.setText(savedCode);
+                  btnApply.setOnClickListener(v -> {
+                      String currentCode = codeInput.getText().toString();
+                      sharedPreferences.edit().putString("custom_js", currentCode).apply();
+                      if (HomeActivity.instance != null) {
+                          HomeActivity.instance.executeConfigCode(currentCode);
+                      }
+                      finish();
+                  });
+              }
+          }
+          EOF
+
+          echo "=== Step 5: Injecting GodMode Code into HomeActivity.java ==="
+          cat << 'EOF' > $JAVA_DIR/HomeActivity.java
+          package com.voidos.launcher;
+          import android.os.Bundle;
+          import android.widget.GridView;
+          import android.widget.Toast;
+          import androidx.appcompat.app.AppCompatActivity;
+
+          public class HomeActivity extends AppCompatActivity {
+              public static HomeActivity instance;
+              private android.webkit.WebView jsEngine;
+              private GridView appsGrid;
+
+              @Override
+              protected void onCreate(Bundle savedInstanceState) {
+                  super.onCreate(savedInstanceState);
+                  setContentView(R.layout.activity_home);
+                  
+                  instance = this;
+                  appsGrid = findViewById(R.id.apps_grid);
+
+                  // WebView Sandbox Setup
+                  jsEngine = new android.webkit.WebView(this);
+                  jsEngine.getSettings().setJavaScriptEnabled(true);
+                  jsEngine.addJavascriptInterface(new VoidOSBridge(), "voidOS");
+
+                  // Advanced Error Handling for JavaScript
+                  jsEngine.setWebChromeClient(new android.webkit.WebChromeClient() {
+                      @Override
+                      public boolean onConsoleMessage(android.webkit.ConsoleMessage consoleMessage) {
+                          if (consoleMessage.messageLevel() == android.webkit.ConsoleMessage.MessageLevel.ERROR) {
+                              String errorMsg = "🔴 Script Error: " + consoleMessage.message() + 
+                                               " at line " + consoleMessage.lineNumber();
+                              showLiveError(errorMsg);
+                          }
+                          return true;
+                      }
+                  });
+
+                  android.content.SharedPreferences prefs = getSharedPreferences("VoidOS_Prefs", MODE_PRIVATE);
+                  String savedCode = prefs.getString("custom_js", "");
+                  if (!savedCode.isEmpty()) {
+                      executeConfigCode(savedCode);
+                  }
+              }
+
+              public void executeConfigCode(final String jsScript) {
+                  runOnUiThread(() -> {
+                      // JavaScript Try-Catch Block to prevent ANY crash
+                      String safeWrappedCode = "try { " + jsScript + " } catch(err) { console.error(err.message); }";
+                      jsEngine.evaluateJavascript(safeWrappedCode, null);
+                  });
+              }
+
+              private void showLiveError(final String msg) {
+                  runOnUiThread(() -> Toast.makeText(HomeActivity.this, msg, Toast.LENGTH_LONG).show());
+              }
+
+              public class VoidOSBridge {
+                  @android.webkit.JavascriptInterface
+                  public void setBgColor(final String hexColor) {
+                      runOnUiThread(() -> {
+                          try {
+                              // Validating Hex Color before applying to prevent freeze
+                              if(hexColor.startsWith("#") && (hexColor.length() == 7 || hexColor.length() == 9)) {
+                                  findViewById(android.R.id.content).setBackgroundColor(android.graphics.Color.parseColor(hexColor));
+                              } else {
+                                  showLiveError("⚠️ Galat Color Code: Use #RRGGBB format");
+                              }
+                          } catch (Exception e) {
+                              showLiveError("⚠️ Invalid Color Profile");
+                          }
+                      });
+                  }
+
+                  @android.webkit.JavascriptInterface
+                  public void setGridColumns(final int columns) {
+                      runOnUiThread(() -> {
+                          // Logical Validation to prevent bad grid rendering
+                          if (columns <= 0 || columns > 10) {
+                              showLiveError("⚠️ Limit Alert: Columns 1 se 10 ke beech hone chahiye!");
+                          } else if (appsGrid != null) {
+                              appsGrid.setNumColumns(columns);
+                          }
+                      });
+                  }
+              }
+          }
+          EOF
+
+          echo "=== Step 6: Compiling with Android Build Tools ==="
+          SDK_DIR=$ANDROID_HOME
+          BUILD_TOOLS_DIR=$(ls -d $SDK_DIR/build-tools/* | tail -1)
+          PLATFORM_JAR=$(ls -d $SDK_DIR/platforms/android-*/android.jar | tail -1)
+
+          mkdir -p obj bin
+          $BUILD_TOOLS_DIR/aapt package -f -m -J src -M AndroidManifest.xml -S res -I $PLATFORM_JAR -F bin/app-unsigned.apk
+          find . -name "*.java" > sources.txt
+          javac -source 1.8 -target 1.8 -d obj -classpath $PLATFORM_JAR @sources.txt
+          $BUILD_TOOLS_DIR/d8 --output bin/ obj/*.class 2>/dev/null || $BUILD_TOOLS_DIR/dx --dex --output=bin/classes.dex obj
+
+          cd bin
+          if [ -f "classes.dex" ]; then zip -ur app-unsigned.apk classes.dex; else zip -ur app-unsigned.apk *.dex; fi
+          keytool -genkey -v -keystore debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US" 2>/dev/null || true
+          jarsigner -verbose -sigalg SHA1withRSA -digestalg SHA1 -keystore debug.keystore -storepass android app-unsigned.apk androiddebugkey
+          mv app-unsigned.apk VoidOSLauncher.apk
+
+      - name: Upload Generated APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: VoidOS-Launcher-APK
+          path: |
+            **/bin/VoidOSLauncher.apk
+            **/VoidOSLauncher.apk
