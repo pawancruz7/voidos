@@ -1,46 +1,12 @@
-name: Build Android APK
+name: Scan Project Structure
 on: [push, workflow_dispatch]
 jobs:
-  build:
+  scan:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
-      - name: Set up JDK 17
-        uses: actions/setup-java@v4
-        with:
-          java-version: '17'
-          distribution: 'temurin'
-
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v4
-
-      - name: Force Build Android Project
+      
+      - name: List All Files and Folders
         run: |
-          # 1. Sabse pehle dhoondho ki settings.gradle kahan hai (wahi project ka main center hai)
-          SETTINGS_PATH=$(find . -name "settings.gradle" -print -quit)
-          
-          if [ -z "$SETTINGS_PATH" ]; then
-            echo "Error: settings.gradle nahi mili!"
-            exit 1
-          fi
-          
-          PROJECT_ROOT=$(dirname "$SETTINGS_PATH")
-          cd "$PROJECT_ROOT"
-          echo "Project Root mil gaya: $PROJECT_ROOT"
-
-          # 2. Agar gradlew file nahi hai, toh hum naye gradle wrapper se use khud banayenge
-          if [ ! -f "gradlew" ]; then
-            echo "gradlew missing thi, naye wrapper se generate kar rahe hain..."
-            gradle wrapper
-          fi
-
-          # 3. Permission dekar build process shuru karo
-          chmod +x gradlew
-          ./gradlew assembleDebug
-
-      - name: Upload APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: VoidOS-Launcher-APK
-          path: "**/build/outputs/apk/debug/*.apk"
+          echo "=== YAHAN DEKHO SAARI FILES KI LIST ==="
+          find . -maxdepth 4 -not -path '*/.*'
