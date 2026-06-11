@@ -15,22 +15,23 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Ultimate Force Manual Build
+      - name: Ultimate Manual Build
         run: |
-          echo "=== Step 1: Navigating to Main Project ==="
-          MANIFEST_PATH=$(find . -name "AndroidManifest.xml" -not -path "*/build/*" -not -path "*/.*" -print -quit)
-          
-          if [ -z "$MANIFEST_PATH" ]; then
-            echo "Error: AndroidManifest.xml nahi mili!"
-            exit 1
+          echo "=== Step 1: Force Entering Sahi Folder ==="
+          # Ab hum dhoondhenge nahi, seedha sahi folder ke andar entry maarenge
+          if [ -d "launcher/src/main" ]; then
+            cd launcher/src/main
+          elif [ -d "voidos-main/launcher/src/main" ]; then
+            cd voidos-main/launcher/src/main
+          else
+            # Agar folder ka naam thoda aage piche ho, toh fallback
+            MANIFEST_PATH=$(find . -name "AndroidManifest.xml" -not -path "*/build/*" -not -path "*/.*" -print -quit)
+            cd $(dirname "$MANIFEST_PATH")
           fi
           
-          LAUNCHER_DIR=$(dirname "$MANIFEST_PATH")
-          echo "Target Directory Selected: $LAUNCHER_DIR"
-          cd "$LAUNCHER_DIR"
+          echo "Hamaari Current Location Hai: $(pwd)"
 
           echo "=== Step 2: Cleaning Hidden Windows Characters Inside Project ==="
-          # Sahi folder ke andar aakar ab ek-ek file ka \r character saaf karenge
           find . -depth -name "*"$'\r'"*" -exec sh -c 'for f; do mv "$f" "$(echo "$f" | tr -d "\r")"; done' _ {} +
 
           echo "=== Step 3: Compiling with Android Build Tools ==="
@@ -42,7 +43,7 @@ jobs:
 
           mkdir -p obj bin
 
-          # 1. Package Resources (Bina kisi error ke)
+          # 1. Package Resources
           $BUILD_TOOLS_DIR/aapt package -f -m -J src -M AndroidManifest.xml -S res -I $PLATFORM_JAR -F bin/app-unsigned.apk || \
           ($BUILD_TOOLS_DIR/aapt2 compile --dir res -o compiled_res.zip && $BUILD_TOOLS_DIR/aapt2 link --manifest AndroidManifest.xml -I $PLATFORM_JAR -o bin/app-unsigned.apk compiled_res.zip)
 
