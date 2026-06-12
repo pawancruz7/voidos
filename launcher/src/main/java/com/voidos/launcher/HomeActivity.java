@@ -335,3 +335,72 @@ public class HomeActivity extends Activity {
         } catch (Exception e) { /* Clean Exit */ }
     }
                   }
+package org.voidos.network;
+
+// ... tumhare purane imports yahan honge ...
+import android.content.ComponentName;
+import android.content.Context;
+import android.content.Intent;
+import android.content.ServiceConnection;
+import android.os.Bundle;
+import android.os.IBinder;
+import android.util.Log;
+import androidx.appcompat.app.AppCompatActivity;
+
+public class HomeActivity extends AppCompatActivity {
+    
+    // 1. Tumhare purane variables jo pehle se the...
+    
+    // KAAM 1: Yeh naye variables yahan jod do
+    private VoidNetworkService voidNetworkService;
+    private boolean isServiceBound = false;
+
+    // KAAM 2: Yeh poora ServiceConnection block yahan paste kar do
+    private final ServiceConnection serviceConnection = new ServiceConnection() {
+        @Override
+        public void onServiceConnected(ComponentName name, IBinder service) {
+            VoidNetworkService.LocalBinder binder = (VoidNetworkService.LocalBinder) service;
+            voidNetworkService = binder.getService();
+            isServiceBound = true;
+            Log.d("VoidOS_Home", "VoidNetworkService successfully bound to UI.");
+            onNetworkServiceReady();
+        }
+
+        @Override
+        public void onServiceDisconnected(ComponentName name) {
+            isServiceBound = false;
+            Log.d("VoidOS_Home", "VoidNetworkService disconnected.");
+        }
+    };
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        // Tumhara purana setContentView ya UI setup yahan hoga...
+        
+        // KAAM 3: Purane code ke neeche yeh line jod do
+        startVoidNetworkService();
+    }
+
+    // KAAM 3 (Part 2): Yeh dono naye methods class ke end mein kahi bhi paste kar do
+    private void startVoidNetworkService() {
+        Intent serviceIntent = new Intent(this, VoidNetworkService.class);
+        startService(serviceIntent);
+        bindService(serviceIntent, serviceConnection, Context.BIND_AUTO_CREATE);
+    }
+
+    private void onNetworkServiceReady() {
+        // Jab network service ready ho jaye tab kya karna hai (Abhi khali chhod do)
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        // Memory leak se bachne ke liye unbind karna
+        if (isServiceBound) {
+            unbindService(serviceConnection);
+            isServiceBound = false;
+        }
+    }
+} // Class ka aakhiri bracket
+
