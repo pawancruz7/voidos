@@ -1,0 +1,7 @@
+id=voidos-privacy
+name=VoidOS Privacy Module
+version=v1.0
+versionCode=1
+author=pawancruz7
+description=Privacy-first de-Googled system module. Blocks all Google tracking, telemetry, and analytics systemlessly.
+updateJson=https://raw.githubusercontent.com/pawancruz7/voidos/main/update.json
