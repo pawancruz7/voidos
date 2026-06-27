@@ -69,6 +69,5 @@ VoidOS operates under a strict Zero-Budget, Serverless Open-Source Development P
 Cost Efficiency: $0 Cloud Infrastructure overhead.
 Download Analytics: Dynamically calculated client-side via distributed open-source asset hooks connected directly to the GitHub Releases API.
 User Privacy: Zero tracking codes, Zero device UUID logs, Zero telemetry tracking. True privacy is preserved at all costs.
-⚖️ License & Open Source Integrity
-This software framework is proudly maintained as an open-source asset under the GNU General Public License (GPL v2) and Apache 2.0 where framework standards apply.
-Maintained with absolute dedication to system engineering standards by @pawancruz7 | Year: 2026.
+​⚖️ Platform License & Compliance
+​VoidOS utilizes a hybrid license compliance matrix (Apache 2.0 + GPLv2 + AGPLv3) to secure upstream Linux compatibility, enable flawless AOSP native compilation, and strictly prevent unauthorized corporate cloud exploitation of serverless modules. See the official LICENSE ledger file for exact sub-system boundaries.
