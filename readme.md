@@ -288,7 +288,7 @@ Author
 
 Created and maintained by:
 
-Pawan (pawancruz7) and team 
+Pawan and team (pooja and Abhinav)
 
 Started in 2026.
 
