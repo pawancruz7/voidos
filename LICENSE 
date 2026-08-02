@@ -1,9 +1,0 @@
-VoidOS Dynamic Licensing Matrix (Year: 2026)
-
-The software components within this repository are distributed under a dual-licensing structure to guarantee platform compilation compatibility while enforcing copyleft protections:
-
-1. ALL NATIVE ANDROID FRAMEWORK INTEGRATION SOURCE FILES (.java) are licensed under the Apache License, Version 2.0. You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
-
-2. ALL LOW-LEVEL LINUX KERNEL CORE DRIVERS (.c) are licensed under the GNU General Public License, Version 2 (GPLv2) as required by the upstream Linux Kernel subsystem.
-
-3. ALL INDEPENDENT SERVERLESS NETWORK ARCHITECTURES AND COMPANION APPLICATION SOURCE MODULES are licensed strictly under the GNU Affero General Public License, Version 3 (AGPLv3). Section 13 Network Interaction rules apply to all remote server deployments.
