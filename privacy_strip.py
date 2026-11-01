@@ -1,4 +1,4 @@
-\#!/usr/bin/env python3
+#!/usr/bin/env python3
 
 import os
 import re
@@ -6,32 +6,32 @@ import sys
 import argparse
 
 TRACKING_PATTERNS = [
-    r"telemetry\.google\.com",
-    r"analytics\.google\.com",
-    r"play\.googleapis\.com",
-    r"firebaselogging\.googleapis\.com",
-    r"crashlytics\.com",
-    r"firebase\.google\.com",
-    r"safebrowsing\.googleapis\.com",
-    r"connectivitycheck\.gstatic\.com",
-    r"clients\d+\.google\.com",
-    r"android\.clients\.google\.com",
-    r"accounts\.google\.com",
-    r"oauth2\.googleapis\.com",
-    r"www\.googleapis\.com",
-    r"android\.googleapis\.com",
-    r"widevine\.l\.google\.com",
-    r"googleadservices\.com",
-    r"doubleclick\.net",
-    r"googlesyndication\.com",
+    r"\btelemetry\.google\.com\b",
+    r"\banalytics\.google\.com\b",
+    r"\bplay\.googleapis\.com\b",
+    r"\bfirebaselogging\.googleapis\.com\b",
+    r"\bcrashlytics\.com\b",
+    r"\bfirebase\.google\.com\b",
+    r"\bsafebrowsing\.googleapis\.com\b",
+    r"\bconnectivitycheck\.gstatic\.com\b",
+    r"\bclients\d+\.google\.com\b",
+    r"\bandroid\.clients\.google\.com\b",
+    r"\bandroid\.googleapis\.com\b",
+    r"\bwidevine\.l\.google\.com\b",
+    r"\bgoogleadservices\.com\b",
+    r"\bdoubleclick\.net\b",
+    r"\bgooglesyndication\.com\b",
 ]
 
 REPLACEMENT = "0.0.0.0"
 
 SCANNABLE_EXTENSIONS = {
     ".java", ".kt", ".xml", ".json", ".gradle",
-    ".properties", ".smali", ".cpp", ".c", ".h",
-    ".mk", ".bp", ".py", ".sh",
+    ".properties", ".cpp", ".c", ".h", ".mk", ".bp"
+}
+
+EXCLUDED_DIRS = {
+    "out", ".git", "node_modules", "external", "prebuilts", "test", "tests"
 }
 
 def should_scan(filepath: str) -> bool:
@@ -40,7 +40,7 @@ def should_scan(filepath: str) -> bool:
 
 def strip_file(filepath: str, dry_run: bool = False) -> int:
     try:
-        with open(filepath, "r", encoding="utf-8", errors="ignore") as f:
+        with open(filepath, "r", encoding="utf-8", errors="surrogateescape", newline="") as f:
             original = f.read()
     except (IOError, PermissionError) as e:
         print(f"  [SKIP] Cannot read {filepath}: {e}")
@@ -58,7 +58,7 @@ def strip_file(filepath: str, dry_run: bool = False) -> int:
     if total_hits > 0:
         print(f"  [STRIPPED] {filepath}  ({total_hits} reference(s) removed)")
         if not dry_run:
-            with open(filepath, "w", encoding="utf-8") as f:
+            with open(filepath, "w", encoding="utf-8", errors="surrogateescape", newline="") as f:
                 f.write(modified)
 
     return total_hits
@@ -69,8 +69,7 @@ def scan_tree(root_dir: str, dry_run: bool = False) -> dict:
     for dirpath, dirnames, filenames in os.walk(root_dir):
         dirnames[:] = [
             d for d in dirnames
-            if not d.startswith(".")
-            and d not in {"out", ".git", "node_modules"}
+            if not d.startswith(".") and d not in EXCLUDED_DIRS
         ]
         for filename in filenames:
             filepath = os.path.join(dirpath, filename)
@@ -86,18 +85,18 @@ def scan_tree(root_dir: str, dry_run: bool = False) -> dict:
 
 def main():
     parser = argparse.ArgumentParser(
-        description="VoidOS Privacy Stripper — removes Google telemetry from AOSP source"
+        description="VoidOS Safe Privacy Stripper — precise telemetry removal"
     )
     parser.add_argument(
         "source_dir",
         nargs="?",
         default=".",
-        help="Root directory of the AOSP source tree (default: current directory)",
+        help="Root directory of the source tree",
     )
     parser.add_argument(
         "--dry-run",
         action="store_true",
-        help="Scan and report without modifying any files",
+        help="Scan and report without modifying files",
     )
     args = parser.parse_args()
 
@@ -106,9 +105,9 @@ def main():
         sys.exit(1)
 
     print("=" * 60)
-    print("  VoidOS Privacy Stripper")
+    print("  VoidOS Safe Privacy Stripper")
     print(f"  Target : {os.path.abspath(args.source_dir)}")
-    print(f"  Mode   : {'DRY RUN (no changes)' if args.dry_run else 'LIVE (files will be modified)'}")
+    print(f"  Mode   : {'DRY RUN' if args.dry_run else 'LIVE'}")
     print("=" * 60)
 
     stats = scan_tree(args.source_dir, dry_run=args.dry_run)
@@ -120,13 +119,6 @@ def main():
     print(f"  Files modified : {stats['files_modified']}")
     print(f"  Total hits     : {stats['total_hits']}")
     print("=" * 60)
-
-    if stats["total_hits"] == 0:
-        print("  No tracking references found. Source is clean.")
-    elif args.dry_run:
-        print("  Re-run without --dry-run to apply changes.")
-    else:
-        print("  De-Googling complete. VoidOS privacy enforced.")
 
 if __name__ == "__main__":
     main()
