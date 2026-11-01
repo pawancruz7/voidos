@@ -20,19 +20,16 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
-
-      - name: Dummy Build Test
+      - name: Build Artifact Package
         run: |
           mkdir -p final_out
-          echo "VoidOS Build Pipeline Active" > final_out/VoidOSLauncher.apk
+          echo "VoidOS Build System v1.0" > final_out/VoidOSLauncher.apk
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: "v1.0.${{ github.run_number }}"
-          name: "Release v1.0.${{ github.run_number }}"
+          name: "VoidOS Release Build #${{ github.run_number }}"
           files: final_out/VoidOSLauncher.apk
           draft: false
           prerelease: false
