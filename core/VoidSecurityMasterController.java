@@ -1,6 +1,5 @@
 package com.voidos.core;
 
-import android.content.Context;
 import android.os.Handler;
 import android.os.Looper;
 import com.voidos.engine.MeshRoutingEngine;
@@ -30,7 +29,7 @@ public class VoidSecurityMasterController {
         this.mAuthExecutor = Executors.newFixedThreadPool(4);
     }
 
-    public static VoidSecurityMasterController getInstance(Context context) {
+    public static VoidSecurityMasterController getInstance() {
         VoidSecurityMasterController localRef = sInstance;
         if (localRef == null) {
             synchronized (sLock) {
