@@ -1,1 +1,63 @@
-launcher/src/main/res/layout/activity_privacy_settings.xml
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="#121212"
+    android:padding="16dp">
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="VoidOS Privacy Subsystem"
+        android:textColor="#FFFFFF"
+        android:textSize="20sp"
+        android:textStyle="bold"
+        android:paddingBottom="24dp" />
+
+    <Switch
+        android:id="@+id/switch_network_firewall"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Kernel-Level Tracker Firewall"
+        android:textColor="#E0E0E0"
+        android:textSize="16sp"
+        android:paddingVertical="12dp" />
+
+    <Switch
+        android:id="@+id/switch_camera_sentinel"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Camera &amp; Audio HAL Interceptor"
+        android:textColor="#E0E0E0"
+        android:textSize="16sp"
+        android:paddingVertical="12dp" />
+
+    <Switch
+        android:id="@+id/switch_gps_fuzzer"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="GPS Location Privacy Fuzzer"
+        android:textColor="#E0E0E0"
+        android:textSize="16sp"
+        android:paddingVertical="12dp" />
+
+    <Switch
+        android:id="@+id/switch_clipboard_guard"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Background Clipboard Protection"
+        android:textColor="#E0E0E0"
+        android:textSize="16sp"
+        android:paddingVertical="12dp" />
+
+    <Button
+        android:id="@+id/btn_run_sanitizer"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="32dp"
+        android:text="Execute Memory Sanitizer Pass"
+        android:backgroundTint="#333333"
+        android:textColor="#FFFFFF" />
+
+</LinearLayout>
