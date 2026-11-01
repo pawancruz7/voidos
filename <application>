@@ -1,5 +1,4 @@
-<application ...>
-
+<application>
     <activity 
         android:name=".LockScreenActivity"
         android:launchMode="singleInstance"
@@ -18,5 +17,4 @@
         android:theme="@android:style/Theme.NoTitleBar.Fullscreen"
         android:exported="false">
     </activity>
-
 </application>
