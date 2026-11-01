@@ -1,7 +1,3 @@
-// VoidOS Graphic Subsystem Build Blueprint
-// Module: Core BootAnimation Asset Pipeline Override
-// Target: /system/media/bootanimation.zip
-
 prebuilt_etc {
     name: "bootanimation.zip",
     src: "bootanimation.zip",
