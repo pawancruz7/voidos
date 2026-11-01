@@ -1,11 +1,14 @@
 package com.voidos.launcher;
 
 import android.content.Context;
+import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
+import android.widget.GridView;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import java.util.List;
 
@@ -36,7 +39,6 @@ public class AppAdapter extends BaseAdapter {
         return position;
     }
 
-    // High-Performance ViewHolder Pattern to eliminate CPU rendering bottlenecks
     private static class ViewHolder {
         ImageView appIcon;
         TextView appLabel;
@@ -47,8 +49,6 @@ public class AppAdapter extends BaseAdapter {
         ViewHolder holder;
 
         if (convertView == null) {
-            // Programmatically generating custom tiny cell layouts inline or fetching from resources
-            // Creating a minimal layout programmatically to keep the system absolute lightweight
             LinearLayout cellLayout = new LinearLayout(context);
             cellLayout.setLayoutParams(new GridView.LayoutParams(
                     ViewGroup.LayoutParams.MATCH_PARENT, 
@@ -58,7 +58,7 @@ public class AppAdapter extends BaseAdapter {
             cellLayout.setPadding(0, 16, 0, 16);
 
             ImageView iconView = new ImageView(context);
-            iconView.setLayoutParams(new LinearLayout.LayoutParams(128, 128)); // Explicit standard dp mapping
+            iconView.setLayoutParams(new LinearLayout.LayoutParams(128, 128));
             iconView.setScaleType(ImageView.ScaleType.FIT_CENTER);
             cellLayout.addView(iconView);
 
@@ -69,7 +69,7 @@ public class AppAdapter extends BaseAdapter {
             textParams.setMargins(0, 12, 0, 0);
             labelView.setLayoutParams(textParams);
             labelView.setTextColor(0xFFE0E0E0);
-            labelView.setTextSize(11sp);
+            labelView.setTextSize(11f);
             labelView.setSingleLine(true);
             labelView.setEllipsize(android.text.TextUtils.TruncateAt.END);
             labelView.setGravity(Gravity.CENTER);
@@ -85,7 +85,6 @@ public class AppAdapter extends BaseAdapter {
             holder = (ViewHolder) convertView.getTag();
         }
 
-        // Data Binding Execution
         AppModel app = appsList.get(position);
         holder.appIcon.setImageDrawable(app.getIcon());
         holder.appLabel.setText(app.getLabel());
