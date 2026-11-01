@@ -1,4 +1,7 @@
-// pseudo-code logic for filtering
-if (hiddenAppList.contains(info.activityInfo.packageName)) {
-    // Is app ko grid view mein show mat karo, skip kar do!
+List<ResolveInfo> visibleApps = new ArrayList<>();
+for (ResolveInfo info : allApps) {
+    if (hiddenAppList.contains(info.activityInfo.packageName)) {
+        continue;
+    }
+    visibleApps.add(info);
 }
