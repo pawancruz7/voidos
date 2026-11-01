@@ -1,18 +1,11 @@
-#!/usr/bin/env python3
-"""
-VoidOS Privacy Stripper
-Scans AOSP source tree and removes/replaces Google telemetry URLs,
-tracking endpoints, and analytics references.
-"""
+\#!/usr/bin/env python3
 
 import os
 import re
 import sys
 import argparse
 
-# ── Telemetry patterns to strip ──────────────────────────────────────────────
 TRACKING_PATTERNS = [
-    # Google telemetry & analytics
     r"telemetry\.google\.com",
     r"analytics\.google\.com",
     r"play\.googleapis\.com",
@@ -23,37 +16,29 @@ TRACKING_PATTERNS = [
     r"connectivitycheck\.gstatic\.com",
     r"clients\d+\.google\.com",
     r"android\.clients\.google\.com",
-    # Google account / GMS
     r"accounts\.google\.com",
     r"oauth2\.googleapis\.com",
     r"www\.googleapis\.com",
-    # Android check-in / DRM
     r"android\.googleapis\.com",
     r"widevine\.l\.google\.com",
-    # Ads
     r"googleadservices\.com",
     r"doubleclick\.net",
     r"googlesyndication\.com",
 ]
 
-REPLACEMENT = "0.0.0.0"  # Null-route all tracking endpoints
+REPLACEMENT = "0.0.0.0"
 
-# File extensions to scan
 SCANNABLE_EXTENSIONS = {
     ".java", ".kt", ".xml", ".json", ".gradle",
     ".properties", ".smali", ".cpp", ".c", ".h",
     ".mk", ".bp", ".py", ".sh",
 }
 
-# ── Core functions ────────────────────────────────────────────────────────────
-
 def should_scan(filepath: str) -> bool:
     _, ext = os.path.splitext(filepath)
     return ext.lower() in SCANNABLE_EXTENSIONS
 
-
 def strip_file(filepath: str, dry_run: bool = False) -> int:
-    """Strip tracking URLs from a single file. Returns count of replacements."""
     try:
         with open(filepath, "r", encoding="utf-8", errors="ignore") as f:
             original = f.read()
@@ -78,13 +63,10 @@ def strip_file(filepath: str, dry_run: bool = False) -> int:
 
     return total_hits
 
-
 def scan_tree(root_dir: str, dry_run: bool = False) -> dict:
-    """Recursively scan a directory tree."""
     stats = {"files_scanned": 0, "files_modified": 0, "total_hits": 0}
 
     for dirpath, dirnames, filenames in os.walk(root_dir):
-        # Skip hidden dirs and build output dirs
         dirnames[:] = [
             d for d in dirnames
             if not d.startswith(".")
@@ -101,9 +83,6 @@ def scan_tree(root_dir: str, dry_run: bool = False) -> dict:
                 stats["total_hits"] += hits
 
     return stats
-
-
-# ── CLI ───────────────────────────────────────────────────────────────────────
 
 def main():
     parser = argparse.ArgumentParser(
@@ -149,7 +128,5 @@ def main():
     else:
         print("  De-Googling complete. VoidOS privacy enforced.")
 
-
 if __name__ == "__main__":
     main()
-
