@@ -1,11 +1,3 @@
-/**
- * VoidOS — Open Source High-Performance Modular Freedom Engine
- * Subsystem: Native Core Daemon / Hardware-Level Extension Router (CRASH-PROOF)
- * Author: @pawancruz7 | Year: 2026
- * Description: Implements advanced C++ Exception Handling and Safe-Mode recovery
- * to prevent system-wide bootloops even if the user provides corrupted configs.
- */
-
 #include <iostream>
 #include <fstream>
 #include <string>
@@ -13,7 +5,7 @@
 #include <memory>
 #include <unistd.h>
 #include <sys/stat.h>
-#include <stdexcept> // For accurate production-grade exceptions
+#include <stdexcept>
 
 namespace android {
     class VoidLogger {
@@ -50,19 +42,13 @@ private:
         return str.substr(first, (last - first + 1));
     }
 
-    /**
-     * CRASH-PROOF FALLBACK LAYER
-     * If parsing fails or crashes, this instantly recovers the system state 
-     * to prevent hard bricks or bootloops.
-     */
     void enforceSafeModeFallback(const std::string& fatalError) {
         android::VoidLogger::error(TAG, "Exception Intercepted: " + fatalError);
         android::VoidLogger::warn(TAG, "!!! INITIATING VOIDOS CRASH-PROOF SAFE-MODE REGIME !!!");
         
-        // Rolling back to hardcoded 100% stable parameters instantly
         mCurrentConfig = std::make_unique<UserConfigMatrix>();
-        mCurrentConfig->allowDeveloperOptionsOverride = false; // Restrict for protection
-        mCurrentConfig->enforceStrictSandboxing = true;        // Maximum sandbox isolation
+        mCurrentConfig->allowDeveloperOptionsOverride = false;
+        mCurrentConfig->enforceStrictSandboxing = true;
         mCurrentConfig->customDistroVariantName = "VoidOS-SafeMode-Recovery";
         
         android::VoidLogger::info(TAG, "Fallback Engine active. System stability secured. User interface preserved.");
@@ -74,10 +60,7 @@ public:
         mCurrentConfig = std::make_unique<UserConfigMatrix>();
     }
 
-    /**
-     * Production-grade Configuration Parser wrapped inside a strict try-catch block.
-     */
-    bool loadAndApplyUserConfigs() noexcept { // noexcept guarantees this method will handle its own errors
+    bool loadAndApplyUserConfigs() noexcept {
         try {
             std::ifstream configFile(CONFIG_PATH);
             
@@ -94,7 +77,6 @@ public:
 
                 size_t delimiterPos = line.find('=');
                 
-                // CRITICAL CHECK: Preventing out-of-bounds corruption if delimiter is missing
                 if (delimiterPos == std::string::npos) {
                     throw std::runtime_error("Malformed config string syntax detected! Missing '=' delimiter.");
                 }
@@ -102,7 +84,6 @@ public:
                 std::string key = trim(line.substr(0, delimiterPos));
                 std::string value = trim(line.substr(delimiterPos + 1));
 
-                // Simulating a critical failure condition if key length is absurdly high (buffer protection)
                 if (key.length() > 128 || value.length() > 128) {
                     throw std::overflow_error("Configuration key/value size limits exceeded! Potential buffer overflow attack vector.");
                 }
@@ -121,7 +102,6 @@ public:
             return true;
 
         } catch (const std::exception& e) {
-            // If anything inside the try block fails, execution drops here instantly instead of crashing the OS
             enforceSafeModeFallback(e.what());
             executeEnginePrivilegeGrant();
             return false;
@@ -141,7 +121,7 @@ public:
 
 int main() {
     std::cout << "==================================================" << std::endl;
-    std::cout << "    VOID_OS FAULT-TOLERANT NATIVE DAEMON MATRIX   " << std::endl;
+    std::cout << "    VOID_OS FAULT-TOLERANT NATIVE DAEMON MATRIX    " << std::endl;
     std::cout << "==================================================" << std::endl;
     
     auto engine = std::make_unique<VoidExtensionEngine>();
