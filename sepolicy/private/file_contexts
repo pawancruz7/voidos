@@ -1,0 +1,2 @@
+/system/bin/void_sanitizer          u:object_r:void_daemon_exec:s0
+/data/system/voidos(/.*)?           u:object_r:system_data_file:s0
