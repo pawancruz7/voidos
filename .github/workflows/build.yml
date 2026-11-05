@@ -1,0 +1,25 @@
+name: Build VoidOS GSI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+
+    - name: Setup Environment
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y bison g++-multilib git gperf libxml2-utils make python3 rsync zip zlib1g-dev
+
+    - name: Verify Pipeline
+      run: |
+        chmod +x build_voidos.sh
+        echo "Pipeline environment configured successfully."
