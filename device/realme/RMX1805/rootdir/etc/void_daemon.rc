@@ -1,0 +1,6 @@
+service void_daemon /system/bin/void_sanitizer
+    class main
+    user root
+    group root
+    seclabel u:r:void_daemon:s0
+    oneshot
