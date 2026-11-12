@@ -1,0 +1,2 @@
+add_lunch_combo voidos_RMX1805-userdebug
+add_lunch_combo voidos_RMX1805-eng
