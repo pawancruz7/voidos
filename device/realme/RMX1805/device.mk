@@ -14,3 +14,4 @@ PRODUCT_PACKAGES += \
 
 PRODUCT_SEPOLICY_DIRS += \
     device/realme/RMX1805/sepolicy/private
+$(call inherit-product-if-exists, vendor/realme/RMX1805/RMX1805-vendor.mk)
