@@ -1,25 +1,39 @@
-name: Build VoidOS GSI
+name: VoidOS CI Build
 
 on:
   push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
+    branches:
+      - main
+  workflow_dispatch:
 
 jobs:
   build:
-    runs-on: ubuntu-22.04
-    
+    runs-on: ubuntu-latest
     steps:
-    - name: Checkout Repository
-      uses: actions/checkout@v4
+      - name: Checkout Repository
+        uses: actions/checkout@v4
 
-    - name: Setup Environment
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y bison g++-multilib git gperf libxml2-utils make python3 rsync zip zlib1g-dev
+      - name: Verify Device Tree Structure
+        run: |
+          test -f device/realme/RMX1805/device.mk
+          test -f device/realme/RMX1805/voidos_RMX1805.mk
+          test -f device/realme/RMX1805/AndroidProducts.mk
+          test -f device/realme/RMX1805/vendorsetup.sh
+          test -f device/realme/RMX1805/rootdir/etc/fstab.qcom
+          test -f device/realme/RMX1805/rootdir/etc/void_daemon.rc
+          test -f sepolicy/private/void_daemon.te
+          test -f sepolicy/private/file_contexts
 
-    - name: Verify Pipeline
-      run: |
-        chmod +x build_voidos.sh
-        echo "Pipeline environment configured successfully."
+      - name: Verify Custom Packages
+        run: |
+          test -f packages/services/VoidNetwork/Android.bp
+          test -f packages/services/VoidNetwork/java/com/voidos/network/VoidNetworkManager.java
+          test -f packages/apps/VoidOSLauncher/Android.bp
+          test -f packages/apps/VoidOSLauncher/AndroidManifest.xml
+          test -f system/core/void_sanitizer/Android.bp
+          test -f system/core/void_sanitizer/void_sanitizer.cpp
+
+      - name: Validate Syntax and Permissions
+        run: |
+          chmod +x device/realme/RMX1805/vendorsetup.sh
+          bash -n device/realme/RMX1805/vendorsetup.sh
